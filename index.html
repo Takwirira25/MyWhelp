@@ -4,16 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyWhelp - Cloud System</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Font: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- React CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- jsPDF and html2canvas for PDF generation -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -22,11 +21,17 @@
             font-family: 'Inter', sans-serif;
             background-color: #1a202c; /* Dark background */
             color: #e2e8f0; /* Light text */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 1rem;
+            flex-grow: 1; /* Allow container to grow and push footer down */
         }
         .gradient-text {
             background: linear-gradient(90deg, #6366f1, #a855f7);
@@ -55,6 +60,22 @@
         .btn-primary:hover {
             background-color: #4f46e5;
         }
+        .nav-link {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            color: #a0aec0; /* Gray text for inactive links */
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .nav-link:hover {
+            background-color: #4a5568; /* Darker gray on hover */
+            color: #cbd5e0; /* Lighter text on hover */
+        }
+        .nav-link.active {
+            background-color: #6366f1; /* Primary color for active link */
+            color: white;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -62,7 +83,6 @@
 
     <script type="text/babel">
         // Global variables provided by the Canvas environment (mocked for direct HTML run)
-        // In the actual Canvas environment, these would be provided by the runtime.
         const __app_id = 'mywhelp-demo-app'; // Example app ID
         const __firebase_config = JSON.stringify({
             apiKey: "YOUR_FIREBASE_API_KEY", // Replace with your Firebase project's API Key
@@ -83,7 +103,9 @@
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
             signOut,
-            onAuthStateChanged
+            onAuthStateChanged,
+            updateEmail,
+            updatePassword
         } = firebase.auth;
         const {
             getFirestore,
@@ -130,6 +152,51 @@
                         </div>
                     </div>
                 </div>
+            );
+        };
+
+        // Navigation Component
+        const Navbar = ({ currentView, setView, currentUser, handleLogout }) => {
+            return (
+                <nav className="bg-gray-900 p-4 shadow-md">
+                    <div className="container flex justify-between items-center">
+                        <h1 className="text-2xl font-bold gradient-text">MyWhelp</h1>
+                        {currentUser && (
+                            <div className="flex space-x-4">
+                                <button
+                                    onClick={() => setView('dashboard')}
+                                    className={`nav-link ${currentView === 'dashboard' ? 'active' : ''}`}
+                                >
+                                    Dashboard
+                                </button>
+                                <button
+                                    onClick={() => setView('documents')}
+                                    className={`nav-link ${currentView === 'documents' ? 'active' : ''}`}
+                                >
+                                    Documents
+                                </button>
+                                <button
+                                    onClick={() => setView('reports')}
+                                    className={`nav-link ${currentView === 'reports' ? 'active' : ''}`}
+                                >
+                                    Reports
+                                </button>
+                                <button
+                                    onClick={() => setView('account')}
+                                    className={`nav-link ${currentView === 'account' ? 'active' : ''}`}
+                                >
+                                    Account
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition duration-200"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </nav>
             );
         };
 
@@ -396,6 +463,11 @@
                 setReportRows([...reportRows, { item: '', description: '', value: '' }]);
             };
 
+            const handleRemoveReportRow = (index) => {
+                const newRows = reportRows.filter((_, i) => i !== index);
+                setReportRows(newRows);
+            };
+
             const handleReportRowChange = (index, field, value) => {
                 const newRows = [...reportRows];
                 newRows[index][field] = value;
@@ -433,6 +505,30 @@
                     setShowModal(true);
                 } finally {
                     setLoading(false);
+                }
+            };
+
+            const handleDeleteReport = async (reportId, reportTitle) => {
+                if (!userId || !dbRef.current) {
+                    setModalMessage('You must be logged in to delete reports.');
+                    setModalType('error');
+                    setShowModal(true);
+                    return;
+                }
+
+                if (window.confirm(`Are you sure you want to delete "${reportTitle}"?`)) {
+                    try {
+                        await deleteDoc(doc(dbRef.current, `artifacts/${__app_id}/users/${userId}/reports`, reportId));
+                        setModalMessage('Report deleted successfully!');
+                        setModalType('notification');
+                        setShowModal(true);
+                        setSelectedReport(null); // Deselect report if it was the one deleted
+                    } catch (error) {
+                        console.error("Error deleting report:", error);
+                        setModalMessage(`Report deletion failed: ${error.message}`);
+                        setModalType('error');
+                        setShowModal(true);
+                    }
                 }
             };
 
@@ -499,6 +595,38 @@
                 }
             };
 
+            const handleUpdateAccount = async (newEmail, newPassword) => {
+                if (!currentUser) {
+                    setModalMessage('You must be logged in to update your account.');
+                    setModalType('error');
+                    setShowModal(true);
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    if (newEmail && newEmail !== currentUser.email) {
+                        await updateEmail(currentUser, newEmail);
+                        setModalMessage('Email updated successfully!');
+                        setModalType('notification');
+                        setShowModal(true);
+                    }
+                    if (newPassword) {
+                        await updatePassword(currentUser, newPassword);
+                        setModalMessage(prev => prev + (prev ? ' And ' : '') + 'Password updated successfully!');
+                        setModalType('notification');
+                        setShowModal(true);
+                    }
+                } catch (error) {
+                    console.error("Error updating account:", error);
+                    setModalMessage(`Failed to update account: ${error.message}`);
+                    setModalType('error');
+                    setShowModal(true);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
             const renderAuth = () => (
                 <div className="flex flex-col items-center justify-center min-h-screen p-4">
                     <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -541,7 +669,7 @@
             );
 
             const renderDashboard = () => (
-                <div className="p-6">
+                <div className="p-6 container mx-auto">
                     <h2 className="text-4xl font-bold mb-8 gradient-text">Dashboard</h2>
                     <p className="text-lg text-gray-300 mb-6">Welcome, {currentUser?.email || 'User'}!</p>
                     <p className="text-gray-400 text-sm mb-8">
@@ -558,13 +686,17 @@
                             <p className="text-gray-400 mb-4">Create and view weekly reports.</p>
                             <button onClick={() => setView('reports')} className="btn-primary">Go to Reports</button>
                         </div>
-                        {/* Add more dashboard cards as needed */}
+                        <div className="card text-center">
+                            <h3 className="text-2xl font-semibold mb-3 text-white">Account Settings</h3>
+                            <p className="text-gray-400 mb-4">Manage your profile and security.</p>
+                            <button onClick={() => setView('account')} className="btn-primary">Go to Account</button>
+                        </div>
                     </div>
                 </div>
             );
 
             const renderDocuments = () => (
-                <div className="p-6">
+                <div className="p-6 container mx-auto">
                     <h2 className="text-4xl font-bold mb-8 gradient-text">Documents</h2>
                     <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
                         <h3 className="text-2xl font-semibold mb-4 text-white">Upload New Document</h3>
@@ -589,20 +721,20 @@
                         ) : (
                             <ul className="space-y-4">
                                 {documents.map((doc) => (
-                                    <li key={doc.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
-                                        <span className="text-white text-lg break-all mr-4">{doc.name}</span>
-                                        <div className="flex space-x-3">
+                                    <li key={doc.id} className="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+                                        <span className="text-white text-lg break-all mb-2 sm:mb-0 sm:mr-4 text-center sm:text-left">{doc.name}</span>
+                                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                                             <a
                                                 href={doc.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm text-center"
                                             >
                                                 Download
                                             </a>
                                             <button
                                                 onClick={() => handleDeleteDocument(doc.id, doc.name)}
-                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm"
+                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm text-center"
                                             >
                                                 Delete
                                             </button>
@@ -616,7 +748,7 @@
             );
 
             const renderReports = () => (
-                <div className="p-6">
+                <div className="p-6 container mx-auto">
                     <h2 className="text-4xl font-bold mb-8 gradient-text">Reports</h2>
 
                     {/* Create New Report Section */}
@@ -640,47 +772,46 @@
                         <h4 className="text-xl font-semibold mb-3 text-white">Report Content (Table)</h4>
                         <div className="space-y-3 mb-4">
                             {reportRows.map((row, index) => (
-                                <div key={index} className="flex space-x-3">
+                                <div key={index} className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-3 bg-gray-700 p-3 rounded-lg">
                                     <input
                                         type="text"
                                         placeholder="Item"
-                                        className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        className="flex-1 p-2 rounded-lg bg-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
                                         value={row.item}
                                         onChange={(e) => handleReportRowChange(index, 'item', e.target.value)}
                                     />
                                     <input
                                         type="text"
                                         placeholder="Description"
-                                        className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        className="flex-1 p-2 rounded-lg bg-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
                                         value={row.description}
                                         onChange={(e) => handleReportRowChange(index, 'description', e.target.value)}
                                     />
                                     <input
                                         type="text"
                                         placeholder="Value"
-                                        className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                        className="w-24 p-2 rounded-lg bg-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
                                         value={row.value}
                                         onChange={(e) => handleReportRowChange(index, 'value', e.target.value)}
                                     />
+                                    <button
+                                        onClick={() => handleRemoveReportRow(index)}
+                                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 text-sm"
+                                    >
+                                        Remove
+                                    </button>
                                 </div>
                             ))}
                         </div>
-                        <button
-                            onClick={handleAddReportRow}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200 mb-6"
-                        >
+                        <button onClick={handleAddReportRow} className="btn-primary bg-green-600 hover:bg-green-700 mb-4">
                             Add Row
                         </button>
-                        <button
-                            onClick={handleSaveReport}
-                            className="btn-primary w-full"
-                            disabled={loading}
-                        >
+                        <button onClick={handleSaveReport} className="btn-primary w-full" disabled={loading}>
                             {loading ? 'Saving Report...' : 'Save Report'}
                         </button>
                     </div>
 
-                    {/* View Existing Reports Section */}
+                    {/* Your Reports Section */}
                     <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
                         <h3 className="text-2xl font-semibold mb-4 text-white">Your Saved Reports</h3>
                         {reports.length === 0 ? (
@@ -688,26 +819,20 @@
                         ) : (
                             <ul className="space-y-4 mb-6">
                                 {reports.map((report) => (
-                                    <li key={report.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
-                                        <span className="text-white text-lg mr-4">{report.title} ({report.date})</span>
-                                        <div className="flex space-x-3">
+                                    <li key={report.id} className="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+                                        <span className="text-white text-lg break-all mb-2 sm:mb-0 sm:mr-4">
+                                            {report.title} - {report.date}
+                                        </span>
+                                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                                             <button
                                                 onClick={() => setSelectedReport(report)}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm text-center"
                                             >
-                                                View
+                                                View Details
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    if (window.confirm(`Are you sure you want to delete "${report.title}"?`)) {
-                                                        deleteDoc(doc(dbRef.current, `artifacts/${__app_id}/users/${userId}/reports`, report.id));
-                                                        setModalMessage('Report deleted successfully!');
-                                                        setModalType('notification');
-                                                        setShowModal(true);
-                                                        setSelectedReport(null); // Clear selected if deleted
-                                                    }
-                                                }}
-                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm"
+                                                onClick={() => handleDeleteReport(report.id, report.title)}
+                                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm text-center"
                                             >
                                                 Delete
                                             </button>
@@ -718,39 +843,33 @@
                         )}
 
                         {selectedReport && (
-                            <div className="mt-8 p-6 bg-gray-700 rounded-xl shadow-lg">
-                                <h4 className="text-2xl font-semibold mb-4 text-white">
-                                    Selected Report: {selectedReport.title} ({selectedReport.date})
-                                </h4>
-                                <div ref={reportTableRef} className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                                    {/* This is the content that will be converted to PDF */}
-                                    <h5 className="text-xl font-bold mb-3 text-white text-center">{selectedReport.title}</h5>
-                                    <p className="text-gray-400 text-center mb-4">Week Ending: {selectedReport.date}</p>
-                                    <table className="min-w-full divide-y divide-gray-600">
-                                        <thead className="bg-gray-800">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tl-lg">Item</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tr-lg">Value</th>
+                            <div className="bg-gray-700 p-6 rounded-xl shadow-inner mt-8">
+                                <h4 className="text-2xl font-semibold mb-4 text-white">Report Details: {selectedReport.title} ({selectedReport.date})</h4>
+                                <div ref={reportTableRef} className="overflow-x-auto">
+                                    <table className="min-w-full bg-gray-800 rounded-lg overflow-hidden">
+                                        <thead>
+                                            <tr className="bg-gray-600 text-white">
+                                                <th className="py-3 px-4 text-left">Item</th>
+                                                <th className="py-3 px-4 text-left">Description</th>
+                                                <th className="py-3 px-4 text-left">Value</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-gray-700 divide-y divide-gray-600">
+                                        <tbody>
                                             {JSON.parse(selectedReport.content).map((row, index) => (
-                                                <tr key={index}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{row.item}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{row.description}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{row.value}</td>
+                                                <tr key={index} className="border-b border-gray-700 last:border-0">
+                                                    <td className="py-3 px-4">{row.item}</td>
+                                                    <td className="py-3 px-4">{row.description}</td>
+                                                    <td className="py-3 px-4">{row.value}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                <button
-                                    onClick={handleGeneratePdf}
-                                    className="btn-primary w-full mt-6"
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Generating PDF...' : 'Download as PDF'}
+                                <button onClick={handleGeneratePdf} className="btn-primary mt-6 w-full md:w-auto">
+                                    Generate PDF
+                                </button>
+                                <button onClick={() => setSelectedReport(null)} className="btn-primary bg-gray-500 hover:bg-gray-600 mt-4 md:mt-6 ml-0 md:ml-4 w-full md:w-auto">
+                                    Close Details
                                 </button>
                             </div>
                         )}
@@ -758,64 +877,131 @@
                 </div>
             );
 
-            if (loading && !firebaseInitialized) {
+            const renderAccount = () => {
+                const [newEmail, setNewEmail] = useState(currentUser?.email || '');
+                const [newPassword, setNewPassword] = useState('');
+                const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+                const handleUpdateClick = () => {
+                    if (newPassword && newPassword !== confirmNewPassword) {
+                        setModalMessage('New password and confirmation do not match.');
+                        setModalType('error');
+                        setShowModal(true);
+                        return;
+                    }
+                    handleUpdateAccount(newEmail, newPassword);
+                    setNewPassword('');
+                    setConfirmNewPassword('');
+                };
+
                 return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-                        <p>Initializing MyWhelp...</p>
-                        <Modal
-                            show={showModal}
-                            message={modalMessage}
-                            type={modalType}
-                            onClose={() => setShowModal(false)}
-                        />
+                    <div className="p-6 container mx-auto">
+                        <h2 className="text-4xl font-bold mb-8 gradient-text">Account Settings</h2>
+                        <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+                            <h3 className="text-2xl font-semibold mb-4 text-white">Profile Information</h3>
+                            <p className="text-gray-300 mb-4">
+                                **User ID:** <span className="font-mono text-gray-300 break-all">{userId}</span>
+                            </p>
+                            <div className="mb-4">
+                                <label htmlFor="email" className="block text-gray-400 text-sm font-bold mb-2">Email:</label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    value={newEmail}
+                                    onChange={(e) => setNewEmail(e.target.value)}
+                                    placeholder="Your email address"
+                                />
+                            </div>
+                            <h3 className="text-2xl font-semibold mb-4 text-white mt-8">Change Password</h3>
+                            <div className="mb-4">
+                                <label htmlFor="new-password" className="block text-gray-400 text-sm font-bold mb-2">New Password:</label>
+                                <input
+                                    type="password"
+                                    id="new-password"
+                                    className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="Enter new password (min 6 characters)"
+                                />
+                            </div>
+                            <div className="mb-6">
+                                <label htmlFor="confirm-new-password" className="block text-gray-400 text-sm font-bold mb-2">Confirm New Password:</label>
+                                <input
+                                    type="password"
+                                    id="confirm-new-password"
+                                    className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                    placeholder="Confirm new password"
+                                />
+                            </div>
+                            <button
+                                onClick={handleUpdateClick}
+                                className="btn-primary w-full"
+                                disabled={loading}
+                            >
+                                {loading ? 'Updating...' : 'Update Account'}
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full btn-primary bg-red-600 hover:bg-red-700 mt-4"
+                                disabled={loading}
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 );
-            }
+            };
+
+            const renderContent = () => {
+                if (loading) {
+                    return (
+                        <div className="flex justify-center items-center min-h-screen">
+                            <div className="text-xl text-gray-300">Loading...</div>
+                        </div>
+                    );
+                }
+
+                if (!firebaseInitialized) {
+                    return (
+                        <div className="flex justify-center items-center min-h-screen">
+                            <div className="text-xl text-red-400">Firebase failed to initialize. Please check console for errors.</div>
+                        </div>
+                    );
+                }
+
+                switch (view) {
+                    case 'auth':
+                        return renderAuth();
+                    case 'dashboard':
+                        return renderDashboard();
+                    case 'documents':
+                        return renderDocuments();
+                    case 'reports':
+                        return renderReports();
+                    case 'account':
+                        return renderAccount();
+                    default:
+                        return renderAuth();
+                }
+            };
 
             return (
-                <div className="min-h-screen bg-gray-900 text-gray-100 font-inter">
-                    {/* Header/Navbar */}
-                    {currentUser && (
-                        <header className="bg-gray-900 py-4 shadow-lg">
-                            <nav className="container mx-auto flex justify-between items-center px-4">
-                                <h1 className="text-3xl font-bold gradient-text rounded-lg p-2">MyWhelp</h1>
-                                <div className="flex space-x-6">
-                                    <button onClick={() => setView('dashboard')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Dashboard</button>
-                                    <button onClick={() => setView('documents')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Documents</button>
-                                    <button onClick={() => setView('reports')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Reports</button>
-                                    <button onClick={handleLogout} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Logout</button>
-                                </div>
-                            </nav>
-                        </header>
-                    )}
-
-                    {/* Main Content Area */}
-                    <main className="container mx-auto py-8">
-                        {view === 'auth' && renderAuth()}
-                        {view === 'dashboard' && currentUser && renderDashboard()}
-                        {view === 'documents' && currentUser && renderDocuments()}
-                        {view === 'reports' && currentUser && renderReports()}
-                        {/* Add other views as needed */}
+                <div className="min-h-screen flex flex-col">
+                    {currentUser && <Navbar currentView={view} setView={setView} currentUser={currentUser} handleLogout={handleLogout} />}
+                    <main className="flex-grow">
+                        {renderContent()}
                     </main>
-
-                    {/* Footer */}
-                    <footer className="bg-gray-900 py-8 text-center text-gray-500 text-sm mt-auto">
-                        <div className="container mx-auto">
-                            <p>&copy; 2025 MyWhelp. All rights reserved.</p>
-                        </div>
-                    </footer>
-
-                    <Modal
-                        show={showModal}
-                        message={modalMessage}
-                        type={modalType}
-                        onClose={() => setShowModal(false)}
-                    />
+                    <Modal show={showModal} message={modalMessage} type={modalType} onClose={() => setShowModal(false)} />
                 </div>
             );
         };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        const domNode = document.getElementById('root');
+        const root = createRoot(domNode);
+        root.render(<App />);
     </script>
 </body>
 </html>
