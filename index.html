@@ -74,9 +74,9 @@
         });
         const __initial_auth_token = null; // Or a token if you have one for initial sign-in
 
-        import React, { useState, useEffect, useRef } from 'react';
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import {
+        // Firebase imports from CDN
+        const { initializeApp } = firebase;
+        const {
             getAuth,
             signInAnonymously,
             signInWithCustomToken,
@@ -84,8 +84,8 @@
             signInWithEmailAndPassword,
             signOut,
             onAuthStateChanged
-        } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import {
+        } = firebase.auth;
+        const {
             getFirestore,
             collection,
             doc,
@@ -96,14 +96,17 @@
             serverTimestamp,
             query,
             where
-        } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-        import {
+        } = firebase.firestore;
+        const {
             getStorage,
             ref,
             uploadBytes,
             getDownloadURL,
             deleteObject
-        } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js';
+        } = firebase.storage;
+
+        const { useState, useEffect, useRef } = React;
+        const { createRoot } = ReactDOM;
 
         // Modal Component for custom alerts/confirmations
         const Modal = ({ show, message, type, onClose }) => {
@@ -164,17 +167,18 @@
 
             // Initialize Firebase and set up auth listener
             useEffect(() => {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase config is missing. Cannot initialize Firebase.");
+                const firebaseConfigParsed = JSON.parse(__firebase_config);
+                if (Object.keys(firebaseConfigParsed).length === 0 || !firebaseConfigParsed.apiKey) {
+                    console.error("Firebase config is missing or incomplete. Cannot initialize Firebase.");
                     setLoading(false);
-                    setModalMessage("Firebase configuration is missing. Please ensure it's provided.");
+                    setModalMessage("Firebase configuration is missing. Please ensure it's provided in the code.");
                     setModalType('error');
                     setShowModal(true);
                     return;
                 }
 
                 try {
-                    const app = initializeApp(firebaseConfig);
+                    const app = initializeApp(firebaseConfigParsed);
                     const auth = getAuth(app);
                     const db = getFirestore(app);
                     const storage = getStorage(app);
@@ -198,7 +202,7 @@
                             setView('auth'); // Redirect to auth if logged out
                             console.log("User logged out or not authenticated.");
                             // Attempt anonymous sign-in if no initialAuthToken is provided
-                            if (!initialAuthToken) {
+                            if (!__initial_auth_token) {
                                 try {
                                     await signInAnonymously(auth);
                                     console.log("Signed in anonymously.");
@@ -215,9 +219,9 @@
 
                     // Use the initial auth token if provided
                     const signInWithToken = async () => {
-                        if (initialAuthToken) {
+                        if (__initial_auth_token) {
                             try {
-                                await signInWithCustomToken(auth, initialAuthToken);
+                                await signInWithCustomToken(auth, __initial_auth_token);
                                 console.log("Signed in with custom token.");
                             } catch (error) {
                                 console.error("Error signing in with custom token:", error);
@@ -243,7 +247,7 @@
             useEffect(() => {
                 if (userId && firebaseInitialized && dbRef.current) {
                     // Fetch documents
-                    const docsCollectionRef = collection(dbRef.current, `artifacts/${appId}/users/${userId}/documents`);
+                    const docsCollectionRef = collection(dbRef.current, `artifacts/${__app_id}/users/${userId}/documents`);
                     const unsubscribeDocs = onSnapshot(docsCollectionRef, (snapshot) => {
                         const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setDocuments(fetchedDocs);
@@ -255,7 +259,7 @@
                     });
 
                     // Fetch reports
-                    const reportsCollectionRef = collection(dbRef.current, `artifacts/${appId}/users/${userId}/reports`);
+                    const reportsCollectionRef = collection(dbRef.current, `artifacts/${__app_id}/users/${userId}/reports`);
                     const unsubscribeReports = onSnapshot(reportsCollectionRef, (snapshot) => {
                         const fetchedReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setReports(fetchedReports);
@@ -338,7 +342,7 @@
                     const downloadURL = await getDownloadURL(fileRef);
 
                     // Save document metadata to Firestore
-                    await addDoc(collection(dbRef.current, `artifacts/${appId}/users/${userId}/documents`), {
+                    await addDoc(collection(dbRef.current, `artifacts/${__app_id}/users/${userId}/documents`), {
                         name: selectedFile.name,
                         url: downloadURL,
                         uploadedAt: serverTimestamp(),
@@ -374,7 +378,7 @@
                         await deleteObject(fileRef);
 
                         // Delete from Firestore
-                        await deleteDoc(doc(dbRef.current, `artifacts/${appId}/users/${userId}/documents`, docId));
+                        await deleteDoc(doc(dbRef.current, `artifacts/${__app_id}/users/${userId}/documents`, docId));
 
                         setModalMessage('Document deleted successfully!');
                         setModalType('notification');
@@ -408,7 +412,7 @@
 
                 setLoading(true);
                 try {
-                    await addDoc(collection(dbRef.current, `artifacts/${appId}/users/${userId}/reports`), {
+                    await addDoc(collection(dbRef.current, `artifacts/${__app_id}/users/${userId}/reports`), {
                         title: newReportTitle,
                         date: newReportDate,
                         content: JSON.stringify(reportRows), // Store as JSON string
@@ -696,7 +700,7 @@
                                             <button
                                                 onClick={() => {
                                                     if (window.confirm(`Are you sure you want to delete "${report.title}"?`)) {
-                                                        deleteDoc(doc(dbRef.current, `artifacts/${appId}/users/${userId}/reports`, report.id));
+                                                        deleteDoc(doc(dbRef.current, `artifacts/${__app_id}/users/${userId}/reports`, report.id));
                                                         setModalMessage('Report deleted successfully!');
                                                         setModalType('notification');
                                                         setShowModal(true);
