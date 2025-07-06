@@ -1,0 +1,751 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import {
+    getAuth,
+    signInAnonymously,
+    signInWithCustomToken,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from 'firebase/auth';
+import {
+    getFirestore,
+    collection,
+    doc,
+    addDoc,
+    getDocs,
+    deleteDoc,
+    onSnapshot,
+    serverTimestamp,
+    query,
+    where
+} from 'firebase/firestore';
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL,
+    deleteObject
+} from 'firebase/storage';
+
+// Import jsPDF and html2canvas for PDF generation
+// These will be loaded via script tags in a real HTML file, but for React,
+// we'll assume they are globally available or imported if using a build system.
+// For this environment, we'll assume they are available globally after CDN load.
+// If not, they would need to be loaded dynamically or via a build process.
+// For simplicity in this direct React output, we'll assume global availability.
+// In a typical React setup, you'd 'npm install jspdf html2canvas' and import them.
+
+// Global variables provided by the Canvas environment
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Modal Component for custom alerts/confirmations
+const Modal = ({ show, message, type, onClose }) => {
+    if (!show) return null;
+
+    const bgColor = type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    const textColor = 'text-white';
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`rounded-xl shadow-lg p-6 max-w-sm w-full ${bgColor} ${textColor} transform transition-all duration-300 scale-105`}>
+                <h3 className="text-xl font-semibold mb-4">{type === 'error' ? 'Error' : 'Notification'}</h3>
+                <p className="mb-6">{message}</p>
+                <div className="flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-5 py-2 bg-white text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition duration-200"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Main App Component
+const App = () => {
+    const [view, setView] = useState('auth'); // 'auth', 'dashboard', 'documents', 'reports', 'account'
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+
+    const [documents, setDocuments] = useState([]);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+
+    const [reports, setReports] = useState([]);
+    const [newReportTitle, setNewReportTitle] = useState('');
+    const [newReportDate, setNewReportDate] = useState('');
+    const [reportRows, setReportRows] = useState([{ item: '', description: '', value: '' }]);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const reportTableRef = useRef(null); // Ref for the report table to convert to PDF
+
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [modalMessage, setModalMessage] = useState('');
+    const [modalType, setModalType] = useState('notification'); // 'notification' or 'error'
+
+    // Firebase instances
+    const appRef = useRef(null);
+    const authRef = useRef(null);
+    const dbRef = useRef(null);
+    const storageRef = useRef(null);
+
+    // Initialize Firebase and set up auth listener
+    useEffect(() => {
+        if (Object.keys(firebaseConfig).length === 0) {
+            console.error("Firebase config is missing. Cannot initialize Firebase.");
+            setLoading(false);
+            setModalMessage("Firebase configuration is missing. Please ensure it's provided.");
+            setModalType('error');
+            setShowModal(true);
+            return;
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const storage = getStorage(app);
+
+            appRef.current = app;
+            authRef.current = auth;
+            dbRef.current = db;
+            storageRef.current = storage;
+
+            setFirebaseInitialized(true);
+
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    setCurrentUser(user);
+                    setUserId(user.uid);
+                    setView('dashboard'); // Redirect to dashboard on login
+                    console.log("User logged in:", user.uid);
+                } else {
+                    setCurrentUser(null);
+                    setUserId(null);
+                    setView('auth'); // Redirect to auth if logged out
+                    console.log("User logged out or not authenticated.");
+                    // Attempt anonymous sign-in if no initialAuthToken is provided
+                    if (!initialAuthToken) {
+                        try {
+                            await signInAnonymously(auth);
+                            console.log("Signed in anonymously.");
+                        } catch (anonError) {
+                            console.error("Error signing in anonymously:", anonError);
+                            setModalMessage(`Failed to sign in anonymously: ${anonError.message}`);
+                            setModalType('error');
+                            setShowModal(true);
+                        }
+                    }
+                }
+                setLoading(false);
+            });
+
+            // Use the initial auth token if provided
+            const signInWithToken = async () => {
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } catch (error) {
+                        console.error("Error signing in with custom token:", error);
+                        setModalMessage(`Failed to sign in with custom token: ${error.message}`);
+                        setModalType('error');
+                        setShowModal(true);
+                    }
+                }
+            };
+            signInWithToken();
+
+            return () => unsubscribe(); // Cleanup auth listener
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            setModalMessage(`Failed to initialize Firebase: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+            setLoading(false);
+        }
+    }, []); // Empty dependency array means this runs once on mount
+
+    // Fetch documents and reports when userId is available
+    useEffect(() => {
+        if (userId && firebaseInitialized && dbRef.current) {
+            // Fetch documents
+            const docsCollectionRef = collection(dbRef.current, `artifacts/${appId}/users/${userId}/documents`);
+            const unsubscribeDocs = onSnapshot(docsCollectionRef, (snapshot) => {
+                const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setDocuments(fetchedDocs);
+            }, (error) => {
+                console.error("Error fetching documents:", error);
+                setModalMessage(`Failed to load documents: ${error.message}`);
+                setModalType('error');
+                setShowModal(true);
+            });
+
+            // Fetch reports
+            const reportsCollectionRef = collection(dbRef.current, `artifacts/${appId}/users/${userId}/reports`);
+            const unsubscribeReports = onSnapshot(reportsCollectionRef, (snapshot) => {
+                const fetchedReports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setReports(fetchedReports);
+            }, (error) => {
+                console.error("Error fetching reports:", error);
+                setModalMessage(`Failed to load reports: ${error.message}`);
+                setModalType('error');
+                setShowModal(true);
+            });
+
+            return () => {
+                unsubscribeDocs();
+                unsubscribeReports();
+            }; // Cleanup listeners
+        }
+    }, [userId, firebaseInitialized]); // Re-run when userId or firebaseInitialized changes
+
+    const handleAuthAction = async (isSignUp) => {
+        if (!authRef.current) return;
+        setLoading(true);
+        try {
+            if (isSignUp) {
+                await createUserWithEmailAndPassword(authRef.current, email, password);
+                setModalMessage('Account created successfully! You are now logged in.');
+                setModalType('notification');
+            } else {
+                await signInWithEmailAndPassword(authRef.current, email, password);
+                setModalMessage('Logged in successfully!');
+                setModalType('notification');
+            }
+            setShowModal(true);
+            setEmail('');
+            setPassword('');
+        } catch (error) {
+            console.error("Authentication error:", error);
+            setModalMessage(`Authentication failed: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        if (!authRef.current) return;
+        setLoading(true);
+        try {
+            await signOut(authRef.current);
+            setModalMessage('Logged out successfully.');
+            setModalType('notification');
+            setShowModal(true);
+            setView('auth'); // Go back to auth page
+        } catch (error) {
+            console.error("Logout error:", error);
+            setModalMessage(`Logout failed: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
+    const handleUploadDocument = async () => {
+        if (!selectedFile || !userId || !storageRef.current || !dbRef.current) {
+            setModalMessage('Please select a file and ensure you are logged in.');
+            setModalType('error');
+            setShowModal(true);
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const storagePath = `documents/${userId}/${selectedFile.name}`;
+            const fileRef = ref(storageRef.current, storagePath);
+            await uploadBytes(fileRef, selectedFile);
+            const downloadURL = await getDownloadURL(fileRef);
+
+            // Save document metadata to Firestore
+            await addDoc(collection(dbRef.current, `artifacts/${appId}/users/${userId}/documents`), {
+                name: selectedFile.name,
+                url: downloadURL,
+                uploadedAt: serverTimestamp(),
+                userId: userId
+            });
+
+            setModalMessage('Document uploaded successfully!');
+            setModalType('notification');
+            setShowModal(true);
+            setSelectedFile(null); // Clear selected file
+        } catch (error) {
+            console.error("Error uploading document:", error);
+            setModalMessage(`Document upload failed: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDeleteDocument = async (docId, fileName) => {
+        if (!userId || !storageRef.current || !dbRef.current) {
+            setModalMessage('You must be logged in to delete documents.');
+            setModalType('error');
+            setShowModal(true);
+            return;
+        }
+
+        if (window.confirm(`Are you sure you want to delete "${fileName}"?`)) {
+            try {
+                // Delete from Firebase Storage
+                const fileRef = ref(storageRef.current, `documents/${userId}/${fileName}`);
+                await deleteObject(fileRef);
+
+                // Delete from Firestore
+                await deleteDoc(doc(dbRef.current, `artifacts/${appId}/users/${userId}/documents`, docId));
+
+                setModalMessage('Document deleted successfully!');
+                setModalType('notification');
+                setShowModal(true);
+            } catch (error) {
+                console.error("Error deleting document:", error);
+                setModalMessage(`Document deletion failed: ${error.message}`);
+                setModalType('error');
+                setShowModal(true);
+            }
+        }
+    };
+
+    const handleAddReportRow = () => {
+        setReportRows([...reportRows, { item: '', description: '', value: '' }]);
+    };
+
+    const handleReportRowChange = (index, field, value) => {
+        const newRows = [...reportRows];
+        newRows[index][field] = value;
+        setReportRows(newRows);
+    };
+
+    const handleSaveReport = async () => {
+        if (!newReportTitle || !newReportDate || reportRows.length === 0 || !userId || !dbRef.current) {
+            setModalMessage('Please fill in all report details and add at least one row.');
+            setModalType('error');
+            setShowModal(true);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await addDoc(collection(dbRef.current, `artifacts/${appId}/users/${userId}/reports`), {
+                title: newReportTitle,
+                date: newReportDate,
+                content: JSON.stringify(reportRows), // Store as JSON string
+                createdAt: serverTimestamp(),
+                userId: userId
+            });
+
+            setModalMessage('Report saved successfully!');
+            setModalType('notification');
+            setShowModal(true);
+            setNewReportTitle('');
+            setNewReportDate('');
+            setReportRows([{ item: '', description: '', value: '' }]); // Reset form
+        } catch (error) {
+            console.error("Error saving report:", error);
+            setModalMessage(`Failed to save report: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGeneratePdf = () => {
+        if (!selectedReport || !reportTableRef.current) {
+            setModalMessage('Please select a report to generate PDF.');
+            setModalType('error');
+            setShowModal(true);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Ensure jsPDF and html2canvas are loaded (they should be via CDN in the HTML)
+            if (typeof window.jsPDF === 'undefined' || typeof window.html2canvas === 'undefined') {
+                setModalMessage('PDF generation libraries (jsPDF, html2canvas) are not loaded. Please ensure CDNs are correctly linked.');
+                setModalType('error');
+                setShowModal(true);
+                setLoading(false);
+                return;
+            }
+
+            const input = reportTableRef.current;
+            html2canvas(input, {
+                scale: 2, // Increase scale for better quality
+                useCORS: true // Important for images, though we don't have them here
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new window.jsPDF('p', 'mm', 'a4'); // 'p' for portrait, 'mm' for units, 'a4' for size
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save(`${selectedReport.title}_${selectedReport.date}.pdf`);
+                setModalMessage('PDF generated successfully!');
+                setModalType('notification');
+                setShowModal(true);
+            }).catch(error => {
+                console.error("Error generating PDF:", error);
+                setModalMessage(`Failed to generate PDF: ${error.message}`);
+                setModalType('error');
+                setShowModal(true);
+            }).finally(() => {
+                setLoading(false);
+            });
+        } catch (error) {
+            console.error("PDF generation setup error:", error);
+            setModalMessage(`PDF generation failed: ${error.message}`);
+            setModalType('error');
+            setShowModal(true);
+            setLoading(false);
+        }
+    };
+
+    const renderAuth = () => (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+            <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 className="text-3xl font-bold text-center mb-8 gradient-text">MyWhelp</h2>
+                <input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full p-3 mb-4 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <input
+                    type="password"
+                    placeholder="Password"
+                    className="w-full p-3 mb-6 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                    onClick={() => handleAuthAction(false)}
+                    className="w-full btn-primary mb-4"
+                    disabled={loading}
+                >
+                    {loading ? 'Logging In...' : 'Login'}
+                </button>
+                <button
+                    onClick={() => handleAuthAction(true)}
+                    className="w-full btn-primary bg-purple-600 hover:bg-purple-700"
+                    disabled={loading}
+                >
+                    {loading ? 'Creating Account...' : 'Create Account'}
+                </button>
+                {userId && ( // Show user ID if anonymously logged in
+                    <p className="text-gray-400 text-sm mt-4 text-center">
+                        Current User ID: <span className="font-mono text-gray-300 break-all">{userId}</span>
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+
+    const renderDashboard = () => (
+        <div className="p-6">
+            <h2 className="text-4xl font-bold mb-8 gradient-text">Dashboard</h2>
+            <p className="text-lg text-gray-300 mb-6">Welcome, {currentUser?.email || 'User'}!</p>
+            <p className="text-gray-400 text-sm mb-8">
+                Your User ID: <span className="font-mono text-gray-300 break-all">{userId}</span>
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="card text-center">
+                    <h3 className="text-2xl font-semibold mb-3 text-white">Documents</h3>
+                    <p className="text-gray-400 mb-4">Manage your stored files.</p>
+                    <button onClick={() => setView('documents')} className="btn-primary">Go to Documents</button>
+                </div>
+                <div className="card text-center">
+                    <h3 className="text-2xl font-semibold mb-3 text-white">Reports</h3>
+                    <p className="text-gray-400 mb-4">Create and view weekly reports.</p>
+                    <button onClick={() => setView('reports')} className="btn-primary">Go to Reports</button>
+                </div>
+                {/* Add more dashboard cards as needed */}
+            </div>
+        </div>
+    );
+
+    const renderDocuments = () => (
+        <div className="p-6">
+            <h2 className="text-4xl font-bold mb-8 gradient-text">Documents</h2>
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Upload New Document</h3>
+                <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className="w-full p-3 mb-4 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600"
+                />
+                <button
+                    onClick={handleUploadDocument}
+                    className="btn-primary w-full"
+                    disabled={uploading || !selectedFile}
+                >
+                    {uploading ? 'Uploading...' : 'Upload Document'}
+                </button>
+            </div>
+
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Your Documents</h3>
+                {documents.length === 0 ? (
+                    <p className="text-gray-400">No documents uploaded yet.</p>
+                ) : (
+                    <ul className="space-y-4">
+                        {documents.map((doc) => (
+                            <li key={doc.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+                                <span className="text-white text-lg break-all mr-4">{doc.name}</span>
+                                <div className="flex space-x-3">
+                                    <a
+                                        href={doc.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm"
+                                    >
+                                        Download
+                                    </a>
+                                    <button
+                                        onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+
+    const renderReports = () => (
+        <div className="p-6">
+            <h2 className="text-4xl font-bold mb-8 gradient-text">Reports</h2>
+
+            {/* Create New Report Section */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Create New Weekly Report</h3>
+                <input
+                    type="text"
+                    placeholder="Report Title (e.g., Q2 2025 Performance)"
+                    className="w-full p-3 mb-4 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={newReportTitle}
+                    onChange={(e) => setNewReportTitle(e.target.value)}
+                />
+                <input
+                    type="date"
+                    placeholder="Week Ending Date"
+                    className="w-full p-3 mb-4 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={newReportDate}
+                    onChange={(e) => setNewReportDate(e.target.value)}
+                />
+
+                <h4 className="text-xl font-semibold mb-3 text-white">Report Content (Table)</h4>
+                <div className="space-y-3 mb-4">
+                    {reportRows.map((row, index) => (
+                        <div key={index} className="flex space-x-3">
+                            <input
+                                type="text"
+                                placeholder="Item"
+                                className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                value={row.item}
+                                onChange={(e) => handleReportRowChange(index, 'item', e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Description"
+                                className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                value={row.description}
+                                onChange={(e) => handleReportRowChange(index, 'description', e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Value"
+                                className="flex-1 p-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                value={row.value}
+                                onChange={(e) => handleReportRowChange(index, 'value', e.target.value)}
+                            />
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={handleAddReportRow}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200 mb-6"
+                >
+                    Add Row
+                </button>
+                <button
+                    onClick={handleSaveReport}
+                    className="btn-primary w-full"
+                    disabled={loading}
+                >
+                    {loading ? 'Saving Report...' : 'Save Report'}
+                </button>
+            </div>
+
+            {/* View Existing Reports Section */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Your Saved Reports</h3>
+                {reports.length === 0 ? (
+                    <p className="text-gray-400">No reports saved yet.</p>
+                ) : (
+                    <ul className="space-y-4 mb-6">
+                        {reports.map((report) => (
+                            <li key={report.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+                                <span className="text-white text-lg mr-4">{report.title} ({report.date})</span>
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={() => setSelectedReport(report)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 text-sm"
+                                    >
+                                        View
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm(`Are you sure you want to delete "${report.title}"?`)) {
+                                                deleteDoc(doc(dbRef.current, `artifacts/${appId}/users/${userId}/reports`, report.id));
+                                                setModalMessage('Report deleted successfully!');
+                                                setModalType('notification');
+                                                setShowModal(true);
+                                                setSelectedReport(null); // Clear selected if deleted
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                {selectedReport && (
+                    <div className="mt-8 p-6 bg-gray-700 rounded-xl shadow-lg">
+                        <h4 className="text-2xl font-semibold mb-4 text-white">
+                            Selected Report: {selectedReport.title} ({selectedReport.date})
+                        </h4>
+                        <div ref={reportTableRef} className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                            {/* This is the content that will be converted to PDF */}
+                            <h5 className="text-xl font-bold mb-3 text-white text-center">{selectedReport.title}</h5>
+                            <p className="text-gray-400 text-center mb-4">Week Ending: {selectedReport.date}</p>
+                            <table className="min-w-full divide-y divide-gray-600">
+                                <thead className="bg-gray-800">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tl-lg">Item</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tr-lg">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-gray-700 divide-y divide-gray-600">
+                                    {JSON.parse(selectedReport.content).map((row, index) => (
+                                        <tr key={index}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{row.item}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{row.description}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{row.value}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button
+                            onClick={handleGeneratePdf}
+                            className="btn-primary w-full mt-6"
+                            disabled={loading}
+                        >
+                            {loading ? 'Generating PDF...' : 'Download as PDF'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    if (loading && !firebaseInitialized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+                <p>Initializing MyWhelp...</p>
+                <Modal
+                    show={showModal}
+                    message={modalMessage}
+                    type={modalType}
+                    onClose={() => setShowModal(false)}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-gray-100 font-inter">
+            {/* Header/Navbar */}
+            {currentUser && (
+                <header className="bg-gray-900 py-4 shadow-lg">
+                    <nav className="container mx-auto flex justify-between items-center px-4">
+                        <h1 className="text-3xl font-bold gradient-text rounded-lg p-2">MyWhelp</h1>
+                        <div className="flex space-x-6">
+                            <button onClick={() => setView('dashboard')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Dashboard</button>
+                            <button onClick={() => setView('documents')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Documents</button>
+                            <button onClick={() => setView('reports')} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Reports</button>
+                            <button onClick={handleLogout} className="text-gray-300 hover:text-white transition duration-300 ease-in-out rounded-md px-3 py-2">Logout</button>
+                        </div>
+                    </nav>
+                </header>
+            )}
+
+            {/* Main Content Area */}
+            <main className="container mx-auto py-8">
+                {view === 'auth' && renderAuth()}
+                {view === 'dashboard' && currentUser && renderDashboard()}
+                {view === 'documents' && currentUser && renderDocuments()}
+                {view === 'reports' && currentUser && renderReports()}
+                {/* Add other views as needed */}
+            </main>
+
+            {/* Footer */}
+            <footer className="bg-gray-900 py-8 text-center text-gray-500 text-sm mt-auto">
+                <div className="container mx-auto">
+                    <p>&copy; 2025 MyWhelp. All rights reserved.</p>
+                </div>
+            </footer>
+
+            <Modal
+                show={showModal}
+                message={modalMessage}
+                type={modalType}
+                onClose={() => setShowModal(false)}
+            />
+        </div>
+    );
+};
+
+export default App;
