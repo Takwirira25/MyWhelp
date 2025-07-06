@@ -1,1057 +1,246 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-
-// Import crypto for encryption/decryption
-// Note: In a real-world app, for strong security, you'd use a more robust key management system.
-// This is a client-side implementation for demonstration.
-import CryptoJS from 'crypto-js';
-
-// Context for Firebase and User
-const AppContext = createContext();
-
-const AppProvider = ({ children }) => {
-    const [app, setApp] = useState(null);
-    const [db, setDb] = useState(null);
-    const [auth, setAuth] = useState(null);
-    const [storage, setStorage] = useState(null);
-    const [userId, setUserId] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [loadingAuth, setLoadingAuth] = useState(true);
-
-    useEffect(() => {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        if (!app) {
-            const firebaseApp = initializeApp(firebaseConfig);
-            setApp(firebaseApp);
-            setDb(getFirestore(firebaseApp));
-            setAuth(getAuth(firebaseApp));
-            setStorage(getStorage(firebaseApp));
-        }
-
-        if (auth) {
-            const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    setUserId(user.uid);
-                    setIsAuthenticated(true);
-                    // Check if user is admin
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists()) {
-                        setIsAdmin(userDocSnap.data().isAdmin || false);
-                    } else {
-                        // If user document doesn't exist, create it (e.g., for new sign-ups)
-                        await setDoc(userDocRef, { email: user.email, isAdmin: false }, { merge: true });
-                        setIsAdmin(false);
-                    }
-                } else {
-                    setUserId(null);
-                    setIsAuthenticated(false);
-                    setIsAdmin(false);
-                    // Sign in anonymously if no token is provided
-                    if (typeof __initial_auth_token === 'undefined') {
-                        await signInAnonymously(auth);
-                    }
-                }
-                setLoadingAuth(false);
-            });
-
-            // Attempt to sign in with custom token if available
-            if (typeof __initial_auth_token !== 'undefined' && !isAuthenticated) {
-                signInWithCustomToken(auth, __initial_auth_token)
-                    .catch((error) => {
-                        console.error("Error signing in with custom token:", error);
-                        // Fallback to anonymous sign-in if custom token fails
-                        signInAnonymously(auth);
-                    });
-            }
-
-            return () => unsubscribe();
-        }
-    }, [app, auth, db, isAuthenticated]); // Re-run if app, auth, db instances change
-
-    return (
-        <AppContext.Provider value={{ app, db, auth, storage, userId, isAuthenticated, isAdmin, loadingAuth }}>
-            {children}
-        </AppContext.Provider>
-    );
-};
-
-const AuthScreen = ({ setCurrentPage }) => {
-    const { auth } = useContext(AppContext);
-    const [isSignUp, setIsSignUp] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
-
-    const handleAuth = async (e) => {
-        e.preventDefault();
-        setMessage('');
-        try {
-            if (isSignUp) {
-                await createUserWithEmailAndPassword(auth, email, password);
-                setMessage('Account created successfully! You are now signed in.');
-            } else {
-                await signInWithEmailAndPassword(auth, email, password);
-                setMessage('Signed in successfully!');
-            }
-        } catch (error) {
-            console.error('Authentication error:', error.message);
-            setMessage(`Error: ${error.message}`);
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-800 to-indigo-900 font-inter p-4">
-            <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center border-4 border-yellow-400">
-                <h1 className="text-5xl font-bold text-purple-900 mb-6 font-serif">MyWhelp</h1>
-                <p className="text-lg text-gray-700 mb-8">
-                    Welcome, Brethren! This is your secure cloud system for the Church.
-                </p>
-
-                <form onSubmit={handleAuth} className="space-y-6">
-                    <div>
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full bg-purple-700 text-white py-3 rounded-lg hover:bg-purple-800 transition duration-300 shadow-md transform hover:scale-105"
-                    >
-                        {isSignUp ? 'Create Account' : 'Sign In'}
-                    </button>
-                </form>
-
-                <p className="mt-6 text-gray-600">
-                    {isSignUp ? 'Already have an account?' : 'Don\'t have an account?'}{' '}
-                    <button
-                        onClick={() => setIsSignUp(!isSignUp)}
-                        className="text-purple-700 hover:underline font-semibold"
-                    >
-                        {isSignUp ? 'Sign In' : 'Create One'}
-                    </button>
-                </p>
-                {message && <p className="mt-4 text-sm text-red-500">{message}</p>}
-            </div>
-        </div>
-    );
-};
-
-const Dashboard = ({ setCurrentPage }) => {
-    const { auth, userId, isAuthenticated, isAdmin, loadingAuth } = useContext(AppContext);
-
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            setCurrentPage('auth');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
-
-    if (loadingAuth) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-800 to-indigo-900 font-inter text-white text-2xl">
-                Loading MyWhelp...
-            </div>
-        );
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MyWhelp Cloud System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #2c3e50, #34495e);
+      color: #fff;
     }
 
-    if (!isAuthenticated) {
-        setCurrentPage('auth');
-        return null; // Or a loading spinner, or redirect
+    header {
+      background: #1c1c3c;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      color: gold;
     }
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-800 to-indigo-900 font-inter text-white flex flex-col">
-            <header className="bg-purple-900 p-4 shadow-lg flex justify-between items-center">
-                <h1 className="text-4xl font-bold font-serif text-yellow-400">MyWhelp</h1>
-                <nav>
-                    <ul className="flex space-x-6">
-                        <li>
-                            <button onClick={() => setCurrentPage('dashboard')} className="text-white hover:text-yellow-300 transition duration-200 font-semibold text-lg">
-                                Dashboard
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => setCurrentPage('file_management')} className="text-white hover:text-yellow-300 transition duration-200 font-semibold text-lg">
-                                Files & Documents
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => setCurrentPage('document_editor')} className="text-white hover:text-yellow-300 transition duration-200 font-semibold text-lg">
-                                Write
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => setCurrentPage('reports')} className="text-white hover:text-yellow-300 transition duration-200 font-semibold text-lg">
-                                Reports
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={handleSignOut} className="bg-yellow-500 text-purple-900 py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-300 font-semibold shadow-md">
-                                Sign Out
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
-            </header>
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 2rem;
+    }
 
-            <main className="flex-grow p-8 flex flex-col items-center justify-center">
-                <div className="bg-white bg-opacity-10 p-10 rounded-xl shadow-2xl text-center border-4 border-yellow-400 max-w-2xl w-full">
-                    <h2 className="text-5xl font-bold text-yellow-300 mb-6 font-serif">Welcome to MyWhelp!</h2>
-                    <p className="text-xl text-gray-200 mb-8">
-                        Your secure sanctuary for managing important Church documents, reports, and files.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <button
-                            onClick={() => setCurrentPage('file_management')}
-                            className="bg-purple-700 text-white py-4 px-6 rounded-xl shadow-lg hover:bg-purple-800 transition duration-300 transform hover:scale-105 text-xl font-semibold"
-                        >
-                            Manage Files & Documents
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('document_editor')}
-                            className="bg-purple-700 text-white py-4 px-6 rounded-xl shadow-lg hover:bg-purple-800 transition duration-300 transform hover:scale-105 text-xl font-semibold"
-                        >
-                            Start Writing
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage('reports')}
-                            className="bg-purple-700 text-white py-4 px-6 rounded-xl shadow-lg hover:bg-purple-800 transition duration-300 transform hover:scale-105 text-xl font-semibold"
-                        >
-                            View & Submit Reports
-                        </button>
-                        <div className="bg-purple-900 text-yellow-300 py-4 px-6 rounded-xl shadow-lg text-xl font-semibold flex items-center justify-center">
-                            Your MyWhelp ID: <span className="ml-2 font-mono text-lg">{userId}</span>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    );
-};
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid gold;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border-radius: 10px;
+    }
 
-const FileManagement = () => {
-    const { db, storage, userId } = useContext(AppContext);
-    const [files, setFiles] = useState([]);
-    const [folders, setFolders] = useState([]);
-    const [currentFolder, setCurrentFolder] = useState(null); // null for root
-    const [newFolderName, setNewFolderName] = useState('');
-    const [uploading, setUploading] = useState(false);
-    const [uploadMessage, setUploadMessage] = useState('');
-    const [encryptionPassphrase, setEncryptionPassphrase] = useState('');
-    const [showEncryptionModal, setShowEncryptionModal] = useState(false);
-    const [fileToEncrypt, setFileToEncrypt] = useState(null);
-    const [fileToDecrypt, setFileToDecrypt] = useState(null);
-    const [showDecryptModal, setShowDecryptModal] = useState(false);
-    const [message, setMessage] = useState('');
+    input, select, button, textarea {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: none;
+      border-radius: 5px;
+    }
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    input, select, textarea {
+      background: #ecf0f1;
+      color: #2c3e50;
+    }
 
-    useEffect(() => {
-        if (!db || !userId) return;
+    button {
+      background: gold;
+      color: #2c3e50;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-        const foldersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/folders`);
-        const filesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/files`);
+    .report-buttons button {
+      width: 32%;
+      margin-right: 2%;
+    }
 
-        // Listen for folders
-        const unsubscribeFolders = onSnapshot(query(foldersCollectionRef), (snapshot) => {
-            const folderList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setFolders(folderList);
-        }, (error) => console.error("Error fetching folders:", error));
+    .hidden {
+      display: none;
+    }
 
-        // Listen for files in current folder
-        const filesQuery = currentFolder
-            ? query(filesCollectionRef, where('folderId', '==', currentFolder.id))
-            : query(filesCollectionRef, where('folderId', '==', null)); // For root files
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: #1c1c3c;
+      font-size: 0.9rem;
+    }
 
-        const unsubscribeFiles = onSnapshot(filesQuery, (snapshot) => {
-            const fileList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setFiles(fileList);
-        }, (error) => console.error("Error fetching files:", error));
+    @media (max-width: 600px) {
+      .report-buttons button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    MyWhelp Cloud System
+  </header>
 
-        return () => {
-            unsubscribeFolders();
-            unsubscribeFiles();
-        };
-    }, [db, userId, currentFolder, appId]);
+  <div class="container">
+    <!-- Login/Create Account -->
+    <div class="section" id="auth-section">
+      <h2>User Login / Create Account</h2>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <button onclick="register()">Create Account</button>
+    </div>
 
-    const handleCreateFolder = async () => {
-        if (!newFolderName.trim()) {
-            setMessage('Folder name cannot be empty.');
-            return;
-        }
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/users/${userId}/folders`), {
-                name: newFolderName,
-                parentId: currentFolder ? currentFolder.id : null,
-                createdAt: new Date(),
+    <!-- File Upload Section -->
+    <div class="section hidden" id="upload-section">
+      <h2>Upload File to Admin</h2>
+      <input type="file" id="fileInput" />
+      <button onclick="uploadFile()">Upload File</button>
+    </div>
+
+    <!-- Download Files -->
+    <div class="section hidden" id="download-section">
+      <h2>Download Shared Files</h2>
+      <ul id="fileList">
+        <!-- Populated via JS -->
+      </ul>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="section hidden" id="report-section">
+      <h2>Create a Report</h2>
+      <div class="report-buttons">
+        <button onclick="createReport('weekly')">Weekly Report</button>
+        <button onclick="createReport('monthly')">Monthly Report</button>
+        <button onclick="createReport('yearly')">Yearly Report</button>
+      </div>
+      <textarea id="reportContent" placeholder="Report content will appear here..." rows="8" readonly></textarea>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 MyWhelp Cloud System. All rights reserved.
+  </footer>
+
+  <!-- Firebase Scripts -->
+  <script type="module">
+    // Firebase SDK imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      listAll,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
+      authDomain: "samrad-quiz.firebaseapp.com",
+      projectId: "samrad-quiz",
+      storageBucket: "samrad-quiz.appspot.com", // corrected here
+      messagingSenderId: "853162839858",
+      appId: "1:853162839858:web:9eb0fde5b5a442a067d12b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    // UI references
+    const authSection = document.getElementById("auth-section");
+    const uploadSection = document.getElementById("upload-section");
+    const downloadSection = document.getElementById("download-section");
+    const reportSection = document.getElementById("report-section");
+
+    function showMainSections() {
+      authSection.classList.add("hidden");
+      uploadSection.classList.remove("hidden");
+      downloadSection.classList.remove("hidden");
+      reportSection.classList.remove("hidden");
+      loadFiles();
+    }
+
+    // Auth functions
+    window.login = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => showMainSections())
+        .catch(err => alert("Login failed: " + err.message));
+    };
+
+    window.register = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => showMainSections())
+        .catch(err => alert("Registration failed: " + err.message));
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) showMainSections();
+    });
+
+    // File upload
+    window.uploadFile = function () {
+      const fileInput = document.getElementById("fileInput");
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Select a file.");
+        return;
+      }
+      const storageRef = ref(storage, "uploads/" + file.name);
+      uploadBytes(storageRef, file)
+        .then(() => {
+          alert("File uploaded!");
+          fileInput.value = "";
+          loadFiles();
+        })
+        .catch(err => alert("Upload error: " + err.message));
+    };
+
+    // List files
+    function loadFiles() {
+      const fileList = document.getElementById("fileList");
+      fileList.innerHTML = "Loading...";
+      const listRef = ref(storage, "uploads/");
+      listAll(listRef)
+        .then(result => {
+          fileList.innerHTML = "";
+          result.items.forEach(itemRef => {
+            getDownloadURL(itemRef).then(url => {
+              const li = document.createElement("li");
+              li.innerHTML = `<a href="${url}" target="_blank">${itemRef.name}</a>`;
+              fileList.appendChild(li);
             });
-            setNewFolderName('');
-            setMessage('Folder created successfully!');
-        } catch (error) {
-            console.error('Error creating folder:', error);
-            setMessage(`Error creating folder: ${error.message}`);
-        }
+          });
+        })
+        .catch(err => {
+          fileList.innerHTML = "Failed to load files.";
+          console.error(err);
+        });
+    }
+
+    // Report generation
+    window.createReport = function (type) {
+      const reportContent = document.getElementById("reportContent");
+      const now = new Date().toLocaleDateString();
+      let title = type.charAt(0).toUpperCase() + type.slice(1);
+      reportContent.value = `=== ${title} Report ===\nDate: ${now}\n\nSummary:\n- Task A completed\n- Task B in progress\n- Notes: ...\n`;
     };
-
-    const handleDeleteFolder = async (folderId) => {
-        if (!window.confirm('Are you sure you want to delete this folder and all its contents?')) return;
-        try {
-            // Delete files within the folder first
-            const filesInFolder = files.filter(f => f.folderId === folderId);
-            for (const file of filesInFolder) {
-                await handleDeleteFile(file.id, file.storagePath);
-            }
-            // Then delete subfolders (recursive deletion if needed, but for now just direct children)
-            const subFolders = folders.filter(f => f.parentId === folderId);
-            for (const subFolder of subFolders) {
-                await handleDeleteFolder(subFolder.id); // Recursive call
-            }
-
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/folders`, folderId));
-            setMessage('Folder and its contents deleted successfully!');
-        } catch (error) {
-            console.error('Error deleting folder:', error);
-            setMessage(`Error deleting folder: ${error.message}`);
-        }
-    };
-
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setUploading(true);
-        setUploadMessage('Uploading...');
-
-        try {
-            const storagePath = `user_files/${userId}/${currentFolder ? currentFolder.id + '/' : ''}${file.name}`;
-            const fileRef = ref(storage, storagePath);
-            await uploadBytes(fileRef, file);
-            const downloadURL = await getDownloadURL(fileRef);
-
-            await addDoc(collection(db, `artifacts/${appId}/users/${userId}/files`), {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                storagePath: storagePath,
-                downloadURL: downloadURL,
-                folderId: currentFolder ? currentFolder.id : null,
-                isEncrypted: false,
-                createdAt: new Date(),
-            });
-            setUploadMessage('File uploaded successfully!');
-        } catch (error) {
-            console.error('Error uploading file:', error);
-            setUploadMessage(`Error uploading file: ${error.message}`);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleDeleteFile = async (fileId, storagePath) => {
-        if (!window.confirm('Are you sure you want to delete this file?')) return;
-        try {
-            // Delete from Storage
-            const fileRef = ref(storage, storagePath);
-            await deleteObject(fileRef);
-
-            // Delete from Firestore
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/files`, fileId));
-            setMessage('File deleted successfully!');
-        } catch (error) {
-            console.error('Error deleting file:', error);
-            setMessage(`Error deleting file: ${error.message}`);
-        }
-    };
-
-    const handleDownloadFile = async (file) => {
-        if (file.isEncrypted) {
-            setFileToDecrypt(file);
-            setShowDecryptModal(true);
-        } else {
-            window.open(file.downloadURL, '_blank');
-        }
-    };
-
-    const encryptFile = async (file, passphrase) => {
-        if (!passphrase) {
-            setMessage('Passphrase is required for encryption.');
-            return;
-        }
-        setMessage('Encrypting file...');
-        try {
-            const response = await fetch(file.downloadURL);
-            const blob = await response.blob();
-            const reader = new FileReader();
-
-            reader.onloadend = async () => {
-                const wordArray = CryptoJS.lib.WordArray.create(reader.result);
-                const encrypted = CryptoJS.AES.encrypt(wordArray, passphrase).toString();
-
-                const encryptedBlob = new Blob([encrypted], { type: 'text/plain' }); // Store as plain text
-                const encryptedFileName = `${file.name}.encrypted`;
-                const storagePath = `user_files/${userId}/${currentFolder ? currentFolder.id + '/' : ''}${encryptedFileName}`;
-                const fileRef = ref(storage, storagePath);
-
-                await uploadBytes(fileRef, encryptedBlob);
-                const newDownloadURL = await getDownloadURL(fileRef);
-
-                // Update Firestore document
-                await setDoc(doc(db, `artifacts/${appId}/users/${userId}/files`, file.id), {
-                    name: encryptedFileName,
-                    type: 'application/octet-stream', // Generic type for encrypted files
-                    storagePath: storagePath,
-                    downloadURL: newDownloadURL,
-                    isEncrypted: true,
-                    originalName: file.name, // Store original name for decryption
-                    originalType: file.type, // Store original type
-                }, { merge: true });
-
-                // Delete original file from storage
-                const originalFileRef = ref(storage, file.storagePath);
-                await deleteObject(originalFileRef);
-
-                setMessage('File encrypted and updated successfully!');
-                setShowEncryptionModal(false);
-                setEncryptionPassphrase('');
-                setFileToEncrypt(null);
-            };
-            reader.readAsArrayBuffer(blob);
-        } catch (error) {
-            console.error('Error encrypting file:', error);
-            setMessage(`Error encrypting file: ${error.message}`);
-        }
-    };
-
-    const decryptFile = async (file, passphrase) => {
-        if (!passphrase) {
-            setMessage('Passphrase is required for decryption.');
-            return;
-        }
-        setMessage('Decrypting file...');
-        try {
-            const response = await fetch(file.downloadURL);
-            const encryptedText = await response.text();
-
-            const decrypted = CryptoJS.AES.decrypt(encryptedText, passphrase);
-            const decryptedBytes = CryptoJS.enc.Latin1.stringify(decrypted); // Use Latin1 to handle binary data
-
-            // Convert decrypted bytes back to original Blob
-            const originalBlob = new Blob([decryptedBytes], { type: file.originalType });
-            const url = URL.createObjectURL(originalBlob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.originalName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            setMessage('File decrypted and downloaded successfully!');
-            setShowDecryptModal(false);
-            setEncryptionPassphrase('');
-            setFileToDecrypt(null);
-        } catch (error) {
-            console.error('Error decrypting file:', error);
-            setMessage(`Error decrypting file. Check passphrase: ${error.message}`);
-        }
-    };
-
-    const getFoldersInCurrentView = () => {
-        return folders.filter(f => f.parentId === (currentFolder ? currentFolder.id : null));
-    };
-
-    const getParentFolder = () => {
-        if (!currentFolder) return null;
-        return folders.find(f => f.id === currentFolder.parentId);
-    };
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-800 to-indigo-900 font-inter text-white p-8">
-            <h2 className="text-4xl font-bold text-yellow-300 mb-8 font-serif">File & Document Management</h2>
-
-            {message && (
-                <div className="bg-yellow-200 text-purple-900 p-3 rounded-lg mb-4 shadow-md">
-                    {message}
-                </div>
-            )}
-
-            <div className="mb-6 flex items-center space-x-4">
-                {currentFolder && (
-                    <button
-                        onClick={() => setCurrentFolder(getParentFolder())}
-                        className="bg-purple-700 text-white py-2 px-4 rounded-lg hover:bg-purple-800 transition duration-300 shadow-md flex items-center"
-                    >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                        Back
-                    </button>
-                )}
-                <h3 className="text-2xl font-semibold text-white">
-                    {currentFolder ? currentFolder.name : 'Root Folder'}
-                </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {/* Folder Creation */}
-                <div className="bg-purple-900 p-6 rounded-xl shadow-lg border-2 border-yellow-400">
-                    <h4 className="text-xl font-semibold text-yellow-300 mb-4">Create New Folder</h4>
-                    <input
-                        type="text"
-                        placeholder="Folder Name"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <button
-                        onClick={handleCreateFolder}
-                        className="w-full bg-yellow-500 text-purple-900 py-3 rounded-lg hover:bg-yellow-600 transition duration-300 font-semibold shadow-md"
-                    >
-                        Create Folder
-                    </button>
-                </div>
-
-                {/* File Upload */}
-                <div className="bg-purple-900 p-6 rounded-xl shadow-lg border-2 border-yellow-400">
-                    <h4 className="text-xl font-semibold text-yellow-300 mb-4">Upload File</h4>
-                    <input
-                        type="file"
-                        onChange={handleFileUpload}
-                        className="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-purple-900 hover:file:bg-yellow-600 mb-4"
-                    />
-                    <p className="text-sm text-gray-300">{uploading ? uploadMessage : 'Select a file to upload.'}</p>
-                </div>
-            </div>
-
-            <div className="bg-white bg-opacity-10 p-6 rounded-xl shadow-2xl border-4 border-yellow-400">
-                <h3 className="text-2xl font-semibold text-yellow-300 mb-6">Contents</h3>
-
-                {/* Folders List */}
-                <div className="mb-8">
-                    <h4 className="text-xl font-semibold text-white mb-4">Folders</h4>
-                    {getFoldersInCurrentView().length === 0 ? (
-                        <p className="text-gray-300">No folders in this view.</p>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {getFoldersInCurrentView().map((folder) => (
-                                <div key={folder.id} className="bg-purple-700 p-4 rounded-lg shadow-md flex items-center justify-between">
-                                    <button onClick={() => setCurrentFolder(folder)} className="text-white font-medium flex items-center hover:text-yellow-300 transition duration-200">
-                                        <svg className="w-6 h-6 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
-                                        {folder.name}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteFolder(folder.id)}
-                                        className="text-red-300 hover:text-red-500 transition duration-200"
-                                        title="Delete Folder"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Files List */}
-                <div>
-                    <h4 className="text-xl font-semibold text-white mb-4">Files</h4>
-                    {files.length === 0 ? (
-                        <p className="text-gray-300">No files in this folder.</p>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {files.map((file) => (
-                                <div key={file.id} className="bg-purple-700 p-4 rounded-lg shadow-md flex flex-col justify-between">
-                                    <p className="text-white font-medium break-words mb-2">
-                                        {file.isEncrypted ? (
-                                            <span className="text-yellow-300 flex items-center">
-                                                <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"></path></svg>
-                                                {file.name} (Encrypted)
-                                            </span>
-                                        ) : (
-                                            file.name
-                                        )}
-                                    </p>
-                                    <div className="flex justify-between items-center mt-auto">
-                                        <button
-                                            onClick={() => handleDownloadFile(file)}
-                                            className="bg-yellow-500 text-purple-900 py-1 px-3 rounded-md hover:bg-yellow-600 transition duration-200 text-sm font-semibold shadow-sm"
-                                        >
-                                            {file.isEncrypted ? 'Decrypt & Download' : 'Download'}
-                                        </button>
-                                        {!file.isEncrypted && (
-                                            <button
-                                                onClick={() => { setFileToEncrypt(file); setShowEncryptionModal(true); }}
-                                                className="bg-indigo-500 text-white py-1 px-3 rounded-md hover:bg-indigo-600 transition duration-200 text-sm font-semibold shadow-sm ml-2"
-                                            >
-                                                Encrypt
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDeleteFile(file.id, file.storagePath)}
-                                            className="text-red-300 hover:text-red-500 transition duration-200 ml-auto"
-                                            title="Delete File"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Encryption Modal */}
-            {showEncryptionModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center border-4 border-yellow-400">
-                        <h3 className="text-2xl font-bold text-purple-900 mb-4">Encrypt File: {fileToEncrypt?.name}</h3>
-                        <p className="text-gray-700 mb-4">Enter a passphrase to encrypt this file. Remember this passphrase to decrypt it later.</p>
-                        <input
-                            type="password"
-                            placeholder="Encryption Passphrase"
-                            value={encryptionPassphrase}
-                            onChange={(e) => setEncryptionPassphrase(e.target.value)}
-                            className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-purple-500"
-                        />
-                        <div className="flex justify-end space-x-4">
-                            <button
-                                onClick={() => { setShowEncryptionModal(false); setEncryptionPassphrase(''); setFileToEncrypt(null); }}
-                                className="bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => encryptFile(fileToEncrypt, encryptionPassphrase)}
-                                className="bg-purple-700 text-white py-2 px-4 rounded-lg hover:bg-purple-800 transition duration-300"
-                            >
-                                Encrypt
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Decryption Modal */}
-            {showDecryptModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center border-4 border-yellow-400">
-                        <h3 className="text-2xl font-bold text-purple-900 mb-4">Decrypt File: {fileToDecrypt?.name}</h3>
-                        <p className="text-gray-700 mb-4">Enter the passphrase used to encrypt this file.</p>
-                        <input
-                            type="password"
-                            placeholder="Decryption Passphrase"
-                            value={encryptionPassphrase}
-                            onChange={(e) => setEncryptionPassphrase(e.target.value)}
-                            className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-purple-500"
-                        />
-                        <div className="flex justify-end space-x-4">
-                            <button
-                                onClick={() => { setShowDecryptModal(false); setEncryptionPassphrase(''); setFileToDecrypt(null); }}
-                                className="bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => decryptFile(fileToDecrypt, encryptionPassphrase)}
-                                className="bg-purple-700 text-white py-2 px-4 rounded-lg hover:bg-purple-800 transition duration-300"
-                            >
-                                Decrypt
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const DocumentEditor = () => {
-    const { db, userId } = useContext(AppContext);
-    const [documents, setDocuments] = useState([]);
-    const [currentDoc, setCurrentDoc] = useState(null);
-    const [docTitle, setDocTitle] = useState('');
-    const [docContent, setDocContent] = useState('');
-    const [message, setMessage] = useState('');
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    useEffect(() => {
-        if (!db || !userId) return;
-
-        const docsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/documents`);
-        const unsubscribe = onSnapshot(query(docsCollectionRef), (snapshot) => {
-            const docList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setDocuments(docList);
-        }, (error) => console.error("Error fetching documents:", error));
-
-        return () => unsubscribe();
-    }, [db, userId, appId]);
-
-    const handleSaveDocument = async () => {
-        if (!docTitle.trim()) {
-            setMessage('Document title cannot be empty.');
-            return;
-        }
-        try {
-            if (currentDoc) {
-                await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/documents`, currentDoc.id), {
-                    title: docTitle,
-                    content: docContent,
-                    updatedAt: new Date(),
-                });
-                setMessage('Document updated successfully!');
-            } else {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/documents`), {
-                    title: docTitle,
-                    content: docContent,
-                    createdAt: new Date(),
-                });
-                setMessage('Document created successfully!');
-                setDocTitle('');
-                setDocContent('');
-            }
-        } catch (error) {
-            console.error('Error saving document:', error);
-            setMessage(`Error saving document: ${error.message}`);
-        }
-    };
-
-    const handleLoadDocument = (docItem) => {
-        setCurrentDoc(docItem);
-        setDocTitle(docItem.title);
-        setDocContent(docItem.content);
-        setMessage('');
-    };
-
-    const handleDeleteDocument = async (docId) => {
-        if (!window.confirm('Are you sure you want to delete this document?')) return;
-        try {
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/documents`, docId));
-            setMessage('Document deleted successfully!');
-            if (currentDoc && currentDoc.id === docId) {
-                setCurrentDoc(null);
-                setDocTitle('');
-                setDocContent('');
-            }
-        } catch (error) {
-            console.error('Error deleting document:', error);
-            setMessage(`Error deleting document: ${error.message}`);
-        }
-    };
-
-    const handleNewDocument = () => {
-        setCurrentDoc(null);
-        setDocTitle('');
-        setDocContent('');
-        setMessage('');
-    };
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-800 to-indigo-900 font-inter text-white p-8">
-            <h2 className="text-4xl font-bold text-yellow-300 mb-8 font-serif">Document Editor</h2>
-
-            {message && (
-                <div className="bg-yellow-200 text-purple-900 p-3 rounded-lg mb-4 shadow-md">
-                    {message}
-                </div>
-            )}
-
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Document List */}
-                <div className="lg:w-1/4 bg-purple-900 p-6 rounded-xl shadow-lg border-2 border-yellow-400">
-                    <h3 className="text-xl font-semibold text-yellow-300 mb-4">My Documents</h3>
-                    <button
-                        onClick={handleNewDocument}
-                        className="w-full bg-yellow-500 text-purple-900 py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-300 font-semibold shadow-md mb-4"
-                    >
-                        + New Document
-                    </button>
-                    {documents.length === 0 ? (
-                        <p className="text-gray-300">No documents yet.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {documents.map((docItem) => (
-                                <li key={docItem.id} className="flex justify-between items-center bg-purple-700 p-3 rounded-lg shadow-sm">
-                                    <button
-                                        onClick={() => handleLoadDocument(docItem)}
-                                        className={`text-white font-medium hover:text-yellow-300 transition duration-200 text-left flex-grow ${currentDoc?.id === docItem.id ? 'text-yellow-300' : ''}`}
-                                    >
-                                        {docItem.title}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteDocument(docItem.id)}
-                                        className="text-red-300 hover:text-red-500 transition duration-200 ml-2"
-                                        title="Delete Document"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-
-                {/* Editor Area */}
-                <div className="lg:w-3/4 bg-white bg-opacity-10 p-8 rounded-xl shadow-2xl border-4 border-yellow-400">
-                    <h3 className="text-2xl font-semibold text-yellow-300 mb-6">
-                        {currentDoc ? 'Edit Document' : 'New Document'}
-                    </h3>
-                    <input
-                        type="text"
-                        placeholder="Document Title"
-                        value={docTitle}
-                        onChange={(e) => setDocTitle(e.target.value)}
-                        className="w-full p-3 mb-4 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <textarea
-                        placeholder="Start writing here..."
-                        value={docContent}
-                        onChange={(e) => setDocContent(e.target.value)}
-                        className="w-full h-96 p-4 mb-6 border border-gray-300 rounded-lg text-gray-800 resize-y focus:ring-2 focus:ring-yellow-500"
-                        style={{ minHeight: '300px' }}
-                    ></textarea>
-                    <button
-                        onClick={handleSaveDocument}
-                        className="bg-purple-700 text-white py-3 px-6 rounded-lg hover:bg-purple-800 transition duration-300 font-semibold shadow-md"
-                    >
-                        Save Document
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const Reports = () => {
-    const { db, userId, isAdmin } = useContext(AppContext);
-    const [reportName, setReportName] = useState('');
-    const [territory, setTerritory] = useState('');
-    const [region, setRegion] = useState('');
-    const [section, setSection] = useState('');
-    const [reportText, setReportText] = useState('');
-    const [message, setMessage] = useState('');
-    const [reports, setReports] = useState([]);
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    useEffect(() => {
-        if (!db) return;
-
-        const reportsCollectionRef = collection(db, `artifacts/${appId}/public/data/reports`);
-        const unsubscribe = onSnapshot(query(reportsCollectionRef), (snapshot) => {
-            const reportList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setReports(reportList);
-        }, (error) => console.error("Error fetching reports:", error));
-
-        return () => unsubscribe();
-    }, [db, appId]);
-
-    const handleSubmitReport = async (e) => {
-        e.preventDefault();
-        if (!reportName || !territory || !region || !section || !reportText) {
-            setMessage('All fields are required to submit a report.');
-            return;
-        }
-
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/reports`), {
-                name: reportName,
-                territory,
-                region,
-                section,
-                reportText,
-                submittedBy: userId,
-                createdAt: new Date(),
-            });
-            setMessage('Report submitted successfully!');
-            setReportName('');
-            setTerritory('');
-            setRegion('');
-            setSection('');
-            setReportText('');
-        } catch (error) {
-            console.error('Error submitting report:', error);
-            setMessage(`Error submitting report: ${error.message}`);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-800 to-indigo-900 font-inter text-white p-8">
-            <h2 className="text-4xl font-bold text-yellow-300 mb-8 font-serif">Youth Reports</h2>
-
-            {message && (
-                <div className="bg-yellow-200 text-purple-900 p-3 rounded-lg mb-4 shadow-md">
-                    {message}
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Report Submission Form */}
-                <div className="bg-purple-900 p-8 rounded-xl shadow-lg border-4 border-yellow-400">
-                    <h3 className="text-2xl font-semibold text-yellow-300 mb-6">Submit a New Report</h3>
-                    <form onSubmit={handleSubmitReport} className="space-y-4">
-                        <div>
-                            <label htmlFor="reportName" className="block text-white text-lg font-medium mb-2">Your Name</label>
-                            <input
-                                type="text"
-                                id="reportName"
-                                value={reportName}
-                                onChange={(e) => setReportName(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="territory" className="block text-white text-lg font-medium mb-2">Territory</label>
-                            <input
-                                type="text"
-                                id="territory"
-                                value={territory}
-                                onChange={(e) => setTerritory(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="region" className="block text-white text-lg font-medium mb-2">Region</label>
-                            <input
-                                type="text"
-                                id="region"
-                                value={region}
-                                onChange={(e) => setRegion(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="section" className="block text-white text-lg font-medium mb-2">Section</label>
-                            <input
-                                type="text"
-                                id="section"
-                                value={section}
-                                onChange={(e) => setSection(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-yellow-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="reportText" className="block text-white text-lg font-medium mb-2">Report Details</label>
-                            <textarea
-                                id="reportText"
-                                value={reportText}
-                                onChange={(e) => setReportText(e.target.value)}
-                                className="w-full h-48 p-3 border border-gray-300 rounded-lg text-gray-800 resize-y focus:ring-2 focus:ring-yellow-500"
-                                required
-                            ></textarea>
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full bg-yellow-500 text-purple-900 py-3 rounded-lg hover:bg-yellow-600 transition duration-300 font-semibold shadow-md"
-                        >
-                            Submit Report
-                        </button>
-                    </form>
-                </div>
-
-                {/* View Reports */}
-                <div className="bg-white bg-opacity-10 p-8 rounded-xl shadow-2xl border-4 border-yellow-400">
-                    <h3 className="text-2xl font-semibold text-yellow-300 mb-6">View Reports</h3>
-                    {!isAdmin ? (
-                        <p className="text-gray-300 text-lg">You must be an admin to view reports.</p>
-                    ) : reports.length === 0 ? (
-                        <p className="text-gray-300 text-lg">No reports submitted yet.</p>
-                    ) : (
-                        <div className="space-y-6">
-                            {reports.map((report) => (
-                                <div key={report.id} className="bg-purple-700 p-5 rounded-lg shadow-md">
-                                    <p className="text-yellow-300 text-xl font-semibold mb-2">{report.name}</p>
-                                    <p className="text-white text-sm mb-1"><strong>Territory:</strong> {report.territory}</p>
-                                    <p className="text-white text-sm mb-1"><strong>Region:</strong> {report.region}</p>
-                                    <p className="text-white text-sm mb-1"><strong>Section:</strong> {report.section}</p>
-                                    <p className="text-gray-200 text-base mt-3">{report.reportText}</p>
-                                    <p className="text-gray-400 text-xs mt-2">Submitted on: {new Date(report.createdAt.toDate()).toLocaleString()}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-const App = () => {
-    const [currentPage, setCurrentPage] = useState('auth'); // 'auth', 'dashboard', 'file_management', 'document_editor', 'reports'
-    const { isAuthenticated, loadingAuth } = useContext(AppContext);
-
-    useEffect(() => {
-        if (!loadingAuth && isAuthenticated) {
-            setCurrentPage('dashboard');
-        } else if (!loadingAuth && !isAuthenticated) {
-            setCurrentPage('auth');
-        }
-    }, [isAuthenticated, loadingAuth]);
-
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'auth':
-                return <AuthScreen setCurrentPage={setCurrentPage} />;
-            case 'dashboard':
-                return <Dashboard setCurrentPage={setCurrentPage} />;
-            case 'file_management':
-                return <FileManagement />;
-            case 'document_editor':
-                return <DocumentEditor />;
-            case 'reports':
-                return <Reports />;
-            default:
-                return <AuthScreen setCurrentPage={setCurrentPage} />;
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-100">
-            <style>
-                {`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap');
-                body {
-                    font-family: 'Inter', sans-serif;
-                }
-                .font-serif {
-                    font-family: 'Playfair Display', serif;
-                }
-                `}
-            </style>
-            <AppProvider>
-                {renderPage()}
-            </AppProvider>
-        </div>
-    );
-};
-
-export default App;
+  </script>
+</body>
+</html>
