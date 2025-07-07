@@ -253,18 +253,6 @@
 </div>
 
 
-
-  <!-- Verification Modal (for email verification during registration) -->
-  <div class="modal" id="verifyModal">
-    <div class="modal-content">
-      <h3>Email Verification</h3>
-      <p>Enter the 5-digit code sent to your email:</p>
-      <input type="text" id="codeInput" maxlength="5" placeholder="Enter Code" />
-      <button onclick="checkVerificationCode()">Verify</button>
-      <button onclick="closeVerifyModal()">Cancel</button>
-    </div>
-  </div>
-
   <!-- Generic Message Modal (for simple alerts/confirmations) -->
   <div class="modal" id="messageModal">
     <div class="modal-content">
@@ -328,7 +316,7 @@
     const reportModal = document.getElementById("reportModal"); // Renamed from 'modal' to avoid conflict
     const modalTitle = document.getElementById("modalTitle");
     const reportText = document.getElementById("reportText");
-    const verifyModal = document.getElementById("verifyModal");
+
 
     // Generic Message Modal elements
     const messageModal = document.getElementById("messageModal");
@@ -462,22 +450,6 @@
       showMessageModal("Registration Failed", "Error: " + err.message);
     });
 };
-
-    /**
-     * Checks the entered verification code against the generated one.
-     */
-    window.checkVerificationCode = function () {
-      const entered = document.getElementById("codeInput").value;
-      if (entered === generatedCode) {
-        closeVerifyModal();
-        currentUser = tempUserData; // Set current user after successful verification
-        showMessageModal("Verification Success", "Email verified successfully! You are now logged in.");
-        showSections();
-      } else {
-        showMessageModal("Verification Failed", "Incorrect verification code. Please try again.");
-      }
-    };
-
 
     /**
      * Uploads a selected file to Firebase Storage.
