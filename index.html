@@ -238,17 +238,20 @@
   </footer>
 
   <!-- Report Modal (for writing reports) -->
+<div class="modal hidden" id="reportModal">
   <div class="modal-content">
-  <h3 id="modalTitle">Create Report</h3>
-  <p id="reportGreeting" style="margin-bottom:1rem;"></p>
-  <input type="text" id="regionInput" placeholder="Region" />
-  <input type="text" id="territoryInput" placeholder="Territory" />
-  <input type="text" id="sectionInput" placeholder="Section" />
-  <input type="date" id="reportDateInput" />
-  <textarea id="reportText" rows="6" placeholder="Write your report here..."></textarea>
-  <button onclick="saveReport()">Save Report</button>
-  <button onclick="closeReportModal()">Cancel</button>
+    <h3 id="modalTitle">Create Report</h3>
+    <p id="reportGreeting" style="margin-bottom:1rem;"></p>
+    <input type="text" id="regionInput" placeholder="Region" />
+    <input type="text" id="territoryInput" placeholder="Territory" />
+    <input type="text" id="sectionInput" placeholder="Section" />
+    <input type="date" id="reportDateInput" />
+    <textarea id="reportText" rows="6" placeholder="Write your report here..."></textarea>
+    <button onclick="saveReport()">Save Report</button>
+    <button onclick="closeReportModal()">Cancel</button>
+  </div>
 </div>
+
 
   <!-- Verification Modal (for email verification during registration) -->
   <div class="modal" id="verifyModal">
