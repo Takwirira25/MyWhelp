@@ -312,8 +312,6 @@
     const auth = getAuth(app);
     const storage = getStorage(app);
 
-    let generatedCode = '';
-    let tempUserData = null; // Used to hold user data during email verification
     let currentUser = null;
     let reportType = '';
 
@@ -442,6 +440,7 @@
     showMessageModal("Registration Error", "Please enter both email and password.");
     return;
   }
+
   if (password.length < 6) {
     showMessageModal("Registration Error", "Password should be at least 6 characters.");
     return;
@@ -449,29 +448,15 @@
 
   createUserWithEmailAndPassword(auth, email, password)
     .then(async ({ user }) => {
-      // Prompt for full name
       const fullName = prompt("Enter your full name:");
       if (fullName) {
         const { updateProfile } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
         await updateProfile(user, { displayName: fullName });
       }
 
-      generatedCode = Math.floor(10000 + Math.random() * 90000).toString(); // 5-digit code
-      tempUserData = user; // Store for verification step
-
-      // Send verification email
-      emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-        to_email: email,
-        code: generatedCode
-      })
-      .then(() => {
-        showMessageModal("Verification Sent", "A 5-digit verification code has been sent to your email. Please check your inbox and spam folder.");
-        openVerifyModal();
-      })
-      .catch(err => {
-        showMessageModal("Email Error", "Failed to send verification email. Please try again.");
-        console.error("EmailJS Error:", err);
-      });
+      currentUser = user;
+      showMessageModal("Registration Successful", "Your account has been created and you are now logged in.");
+      showSections();  // Immediately show sections without verification
     })
     .catch(err => {
       showMessageModal("Registration Failed", "Error: " + err.message);
@@ -493,20 +478,6 @@
       }
     };
 
-    /**
-     * Displays the email verification modal.
-     */
-    function openVerifyModal() {
-      verifyModal.style.display = "flex";
-    }
-
-    /**
-     * Hides the email verification modal.
-     */
-    function closeVerifyModal() {
-      verifyModal.style.display = "none";
-      document.getElementById("codeInput").value = ''; // Clear code input
-    }
 
     /**
      * Uploads a selected file to Firebase Storage.
