@@ -67,6 +67,7 @@
       display: none;
     }
 
+    /* General Modal Styling */
     .modal {
       display: none;
       position: fixed;
@@ -86,10 +87,29 @@
       width: 90%;
       max-width: 500px;
       text-align: center; /* Centered modal content */
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
 
     .modal-content button {
         margin-top: 10px;
+        width: auto; /* Allow buttons to size based on content */
+        padding: 0.7rem 1.5rem;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    /* Specific button styling for delete confirmation */
+    .modal-content .confirm-no {
+        background: #3498db; /* Blue for 'No' */
+    }
+    .modal-content .confirm-no:hover {
+        background: #2980b9;
+    }
+    .modal-content .confirm-yes {
+        background: #e74c3c; /* Red for 'Yes' */
+    }
+    .modal-content .confirm-yes:hover {
+        background: #c0392b;
     }
 
     footer {
@@ -112,12 +132,15 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap; /* Allow items to wrap on smaller screens */
     }
 
     li a {
         color: #fff;
         text-decoration: none;
         word-break: break-all; /* Prevents long filenames from overflowing */
+        flex-grow: 1; /* Allow link to take available space */
+        margin-right: 10px; /* Space between link and button */
     }
 
     li a:hover {
@@ -128,7 +151,7 @@
         width: auto;
         padding: 5px 10px;
         margin: 0;
-        margin-left: 10px;
+        margin-left: auto; /* Push button to the right */
         font-size: 0.8rem;
         background: #e74c3c; /* Red for delete button */
         color: white;
@@ -136,6 +159,33 @@
 
     li button:hover {
         background: #c0392b;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+        .container {
+            padding: 1rem;
+        }
+        header {
+            font-size: 1.5rem;
+            padding: 0.8rem 1rem;
+        }
+        .section {
+            padding: 1.5rem;
+        }
+        li {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        li a {
+            margin-bottom: 5px;
+            margin-right: 0;
+        }
+        li button {
+            margin-left: 0;
+            margin-top: 5px;
+            width: 100%;
+        }
     }
   </style>
 </head>
@@ -145,6 +195,7 @@
   </header>
 
   <div class="container">
+    <!-- Initial view: Login/Register -->
     <div class="section" id="auth-section">
       <h2>Login / Create Account</h2>
       <input type="email" id="email" placeholder="Email" />
@@ -153,6 +204,7 @@
       <button onclick="register()">Create Account</button>
     </div>
 
+    <!-- Main application sections (hidden until logged in) -->
     <div class="section hidden" id="upload-section">
       <h2>Upload File</h2>
       <input type="file" id="fileInput" />
@@ -185,15 +237,20 @@
     &copy; 2025 MyWhelp Cloud System
   </footer>
 
-  <div class="modal" id="reportModal">
-    <div class="modal-content">
-      <h3 id="modalTitle">Create Report</h3>
-      <textarea id="reportText" rows="8" placeholder="Write your report here..."></textarea>
-      <button onclick="saveReport()">Save Report</button>
-      <button onclick="closeReportModal()">Cancel</button>
-    </div>
-  </div>
+  <!-- Report Modal (for writing reports) -->
+  <div class="modal-content">
+  <h3 id="modalTitle">Create Report</h3>
+  <p id="reportGreeting" style="margin-bottom:1rem;"></p>
+  <input type="text" id="regionInput" placeholder="Region" />
+  <input type="text" id="territoryInput" placeholder="Territory" />
+  <input type="text" id="sectionInput" placeholder="Section" />
+  <input type="date" id="reportDateInput" />
+  <textarea id="reportText" rows="6" placeholder="Write your report here..."></textarea>
+  <button onclick="saveReport()">Save Report</button>
+  <button onclick="closeReportModal()">Cancel</button>
+</div>
 
+  <!-- Verification Modal (for email verification during registration) -->
   <div class="modal" id="verifyModal">
     <div class="modal-content">
       <h3>Email Verification</h3>
@@ -204,6 +261,18 @@
     </div>
   </div>
 
+  <!-- Generic Message Modal (for simple alerts/confirmations) -->
+  <div class="modal" id="messageModal">
+    <div class="modal-content">
+      <h3 id="messageModalTitle">Message</h3>
+      <p id="messageModalText"></p>
+      <div id="messageModalButtons">
+        <!-- Buttons will be dynamically added here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
@@ -223,7 +292,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
     // Initialize EmailJS with your public key.
-    // Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS public key.
+    // IMPORTANT: Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS public key.
     emailjs.init("YOUR_PUBLIC_KEY");
 
     const firebaseConfig = {
@@ -254,10 +323,52 @@
 
     const fileList = document.getElementById("fileList");
     const reportList = document.getElementById("reportList");
-    const modal = document.getElementById("reportModal");
+    const reportModal = document.getElementById("reportModal"); // Renamed from 'modal' to avoid conflict
     const modalTitle = document.getElementById("modalTitle");
     const reportText = document.getElementById("reportText");
     const verifyModal = document.getElementById("verifyModal");
+
+    // Generic Message Modal elements
+    const messageModal = document.getElementById("messageModal");
+    const messageModalTitle = document.getElementById("messageModalTitle");
+    const messageModalText = document.getElementById("messageModalText");
+    const messageModalButtons = document.getElementById("messageModalButtons");
+
+    /**
+     * Displays a generic message modal with custom buttons.
+     * @param {string} title - The title of the modal.
+     * @param {string} message - The message to display.
+     * @param {Array<Object>} buttons - An array of button configurations:
+     * [{ text: 'Button Text', className: 'optional-class', onClick: function }]
+     */
+    function showMessageModal(title, message, buttons = [{ text: 'OK', onClick: closeModal }]) {
+        messageModalTitle.innerText = title;
+        messageModalText.innerText = message;
+        messageModalButtons.innerHTML = ''; // Clear previous buttons
+
+        buttons.forEach(btnConfig => {
+            const button = document.createElement('button');
+            button.innerText = btnConfig.text;
+            if (btnConfig.className) {
+                button.classList.add(btnConfig.className);
+            }
+            button.onclick = () => {
+                closeModal(); // Close message modal first
+                if (btnConfig.onClick) {
+                    btnConfig.onClick();
+                }
+            };
+            messageModalButtons.appendChild(button);
+        });
+        messageModal.style.display = "flex";
+    }
+
+    /**
+     * Closes the generic message modal.
+     */
+    function closeModal() {
+        messageModal.style.display = "none";
+    }
 
     /**
      * Shows the main application sections and hides the authentication section.
@@ -302,57 +413,65 @@
       const password = document.getElementById("password").value;
 
       if (!email || !password) {
-        alert("Please enter both email and password.");
+        showMessageModal("Login Error", "Please enter both email and password.");
         return;
       }
 
       signInWithEmailAndPassword(auth, email, password)
         .then(({ user }) => {
           currentUser = user;
-          alert("Login successful!");
+          showMessageModal("Login Success", "You have successfully logged in!");
           showSections();
         })
-        .catch(err => alert("Login failed: " + err.message));
+        .catch(err => showMessageModal("Login Failed", "Error: " + err.message));
     };
 
     /**
      * Handles user registration with email and password, then sends a verification email.
      */
     window.register = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-      if (!email || !password) {
-        alert("Please enter both email and password.");
-        return;
+  if (!email || !password) {
+    showMessageModal("Registration Error", "Please enter both email and password.");
+    return;
+  }
+  if (password.length < 6) {
+    showMessageModal("Registration Error", "Password should be at least 6 characters.");
+    return;
+  }
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(async ({ user }) => {
+      // Prompt for full name
+      const fullName = prompt("Enter your full name:");
+      if (fullName) {
+        const { updateProfile } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+        await updateProfile(user, { displayName: fullName });
       }
-      if (password.length < 6) {
-        alert("Password should be at least 6 characters.");
-        return;
-      }
 
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(({ user }) => {
-          generatedCode = Math.floor(10000 + Math.random() * 90000).toString(); // Generate a 5-digit code
-          tempUserData = user; // Store user temporarily
+      generatedCode = Math.floor(10000 + Math.random() * 90000).toString(); // 5-digit code
+      tempUserData = user; // Store for verification step
 
-          // Send verification email using EmailJS
-          // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your actual values.
-          emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-            to_email: email,
-            code: generatedCode
-          })
-          .then(() => {
-            alert("Verification code sent to your email. Please check your inbox.");
-            openVerifyModal();
-          })
-          .catch(err => {
-            alert("Failed to send verification email. Please try again.");
-            console.error("EmailJS Error:", err);
-          });
-        })
-        .catch(err => alert("Registration error: " + err.message));
-    };
+      // Send verification email
+      emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+        to_email: email,
+        code: generatedCode
+      })
+      .then(() => {
+        showMessageModal("Verification Sent", "A 5-digit verification code has been sent to your email. Please check your inbox and spam folder.");
+        openVerifyModal();
+      })
+      .catch(err => {
+        showMessageModal("Email Error", "Failed to send verification email. Please try again.");
+        console.error("EmailJS Error:", err);
+      });
+    })
+    .catch(err => {
+      showMessageModal("Registration Failed", "Error: " + err.message);
+    });
+};
 
     /**
      * Checks the entered verification code against the generated one.
@@ -362,10 +481,10 @@
       if (entered === generatedCode) {
         closeVerifyModal();
         currentUser = tempUserData; // Set current user after successful verification
-        alert("Email verified successfully!");
+        showMessageModal("Verification Success", "Email verified successfully! You are now logged in.");
         showSections();
       } else {
-        alert("Incorrect verification code. Please try again.");
+        showMessageModal("Verification Failed", "Incorrect verification code. Please try again.");
       }
     };
 
@@ -389,21 +508,31 @@
      */
     window.uploadFile = function () {
       if (!currentUser) {
-        alert("You must be logged in to upload files.");
+        showMessageModal("Upload Error", "You must be logged in to upload files.");
         return;
       }
       const fileInput = document.getElementById("fileInput");
       const file = fileInput.files[0];
-      if (!file) return alert("Please select a file first.");
+      if (!file) {
+        showMessageModal("Upload Error", "Please select a file first.");
+        return;
+      }
 
       const storageRef = ref(storage, `uploads/${currentUser.uid}/${file.name}`);
       uploadBytes(storageRef, file)
         .then(() => {
-          alert("File uploaded successfully!");
           fileInput.value = ''; // Clear the file input
           loadFiles(); // Refresh the file list
+          showMessageModal(
+            "Upload Successful!",
+            "Your file has been uploaded successfully.",
+            [
+              { text: 'Go to Main Menu', onClick: () => showSections() },
+              { text: 'Upload Another File', onClick: () => {} } // Do nothing, message modal closes, file input is clear
+            ]
+          );
         })
-        .catch(err => alert("File upload failed: " + err.message));
+        .catch(err => showMessageModal("Upload Failed", "Error: " + err.message));
     };
 
     /**
@@ -416,7 +545,7 @@
       }
 
       const userFilesRef = ref(storage, `uploads/${currentUser.uid}/`);
-      fileList.innerHTML = "Loading files...";
+      fileList.innerHTML = "<li>Loading files...</li>";
 
       listAll(userFilesRef)
         .then(res => {
@@ -448,19 +577,25 @@
      * @param {string} fullPath The full path of the file to delete.
      */
     window.deleteFile = function(fullPath) {
-        if (!confirm("Are you sure you want to delete this file?")) {
-            return;
-        }
-        const fileRef = ref(storage, fullPath);
-        deleteObject(fileRef)
-            .then(() => {
-                alert("File deleted successfully!");
-                loadFiles(); // Refresh the file list
-            })
-            .catch(err => {
-                alert("Error deleting file: " + err.message);
-                console.error("Delete file error:", err);
-            });
+        showMessageModal(
+            "Confirm Deletion",
+            "Are you sure you want to delete this file? This action cannot be undone.",
+            [
+                { text: 'No, Cancel', className: 'confirm-no', onClick: () => {} },
+                { text: 'Yes, Delete', className: 'confirm-yes', onClick: () => {
+                    const fileRef = ref(storage, fullPath);
+                    deleteObject(fileRef)
+                        .then(() => {
+                            showMessageModal("Deletion Successful", "File deleted successfully!");
+                            loadFiles(); // Refresh the file list
+                        })
+                        .catch(err => {
+                            showMessageModal("Deletion Failed", "Error deleting file: " + err.message);
+                            console.error("Delete file error:", err);
+                        });
+                }}
+            ]
+        );
     };
 
     /**
@@ -468,45 +603,120 @@
      * @param {string} type The type of report (e.g., 'weekly', 'monthly', 'yearly').
      */
     window.openReportModal = function(type) {
-      reportType = type;
-      modalTitle.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
-      reportText.value = ""; // Clear previous report text
-      modal.style.display = "flex";
-    };
+  reportType = type;
+  modalTitle.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
+
+  reportText.value = "";
+  document.getElementById("regionInput").value = "";
+  document.getElementById("territoryInput").value = "";
+  document.getElementById("sectionInput").value = "";
+  document.getElementById("reportDateInput").value = "";
+
+  const name = currentUser.displayName || currentUser.email;
+  document.getElementById("reportGreeting").innerText = `Greetings brethren ${name}`;
+
+  reportModal.style.display = "flex";
+};
+
+
 
     /**
      * Closes the report creation modal.
      */
     window.closeReportModal = function() {
-      modal.style.display = "none";
+      reportModal.style.display = "none";
     };
 
     /**
      * Saves the created report to Firebase Storage.
      */
-    window.saveReport = function () {
-      if (!currentUser) {
-        alert("You must be logged in to save reports.");
-        return;
-      }
-      const content = reportText.value.trim();
-      if (!content) return alert("Please write something in the report.");
+   window.saveReport = function () {
+  if (!currentUser) {
+    showMessageModal("Save Error", "You must be logged in to save reports.");
+    return;
+  }
 
-      const now = new Date();
-      // Format date for filename to ensure uniqueness and readability
-      const dateString = now.toISOString().replace(/[:.]/g, '-');
-      const fileName = `${reportType}_report_${dateString}.txt`;
-      const blob = new Blob([content], { type: "text/plain" });
+  const region = document.getElementById("regionInput").value.trim();
+  const territory = document.getElementById("territoryInput").value.trim();
+  const section = document.getElementById("sectionInput").value.trim();
+  const date = document.getElementById("reportDateInput").value;
+  const content = document.getElementById("reportText").value.trim();
 
-      const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
-      uploadBytes(reportRef, blob)
-        .then(() => {
-          alert("Report saved successfully!");
-          closeReportModal();
-          loadReports(); // Refresh report list
-        })
-        .catch(err => alert("Failed to save report: " + err.message));
-    };
+  if (!region || !territory || !section || !date || !content) {
+    showMessageModal("Missing Info", "Please fill in all fields.");
+    return;
+  }
+
+  const name = currentUser.displayName || currentUser.email;
+  const fullContent = `
+Greetings brethren ${name}
+Region: ${region}
+Territory: ${territory}
+Section: ${section}
+Date of Report: ${date}
+
+Report Details:
+${content}
+  `.trim();
+
+  const now = new Date();
+  const dateString = now.toISOString().replace(/[:.]/g, '-');
+  const fileName = `${reportType}_report_${dateString}.txt`;
+  const blob = new Blob([fullContent], { type: "text/plain" });
+  const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
+
+  uploadBytes(reportRef, blob)
+    .then(() => {
+      reportModal.style.display = "none"; // Hide report modal immediately
+      loadReports(); // Refresh list
+
+      // Show 5-second countdown message
+      messageModalTitle.innerText = "Report Saved!";
+      messageModalText.innerText = "Your report has been saved successfully. Closing in 5 seconds...";
+      messageModalButtons.innerHTML = "";
+      messageModal.style.display = "flex";
+
+      setTimeout(() => {
+        showMessageModal("Next Action", "Choose what to do next:", [
+          { text: "Go to Main Menu", onClick: showSections },
+          { text: "Write Another Report", onClick: () => openReportModal(reportType) }
+        ]);
+      }, 5000);
+    })
+    .catch(err => {
+      showMessageModal("Save Failed", "Error: " + err.message);
+    });
+};
+
+
+  const fullContent = `
+Greetings brethren ${currentUser.email}
+Region: ${region}
+Territory: ${territory}
+Section: ${section}
+Date of Report: ${date}
+
+Report Details:
+${content}
+  `.trim();
+
+  const now = new Date();
+  const dateString = now.toISOString().replace(/[:.]/g, '-');
+  const fileName = `${reportType}_report_${dateString}.txt`;
+  const blob = new Blob([fullContent], { type: "text/plain" });
+
+  const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
+  uploadBytes(reportRef, blob)
+    .then(() => {
+      reportModal.style.display = "none";
+      loadReports();
+      showMessageModal("Report Saved!", "Your report has been saved successfully.", [
+        { text: "Go to Main Menu", onClick: showSections },
+        { text: "Write Another Report", onClick: () => openReportModal(reportType) }
+      ]);
+    })
+    .catch(err => showMessageModal("Save Failed", "Error: " + err.message));
+};
 
     /**
      * Loads and displays the current user's saved reports from Firebase Storage.
@@ -518,7 +728,7 @@
       }
 
       const userReportRef = ref(storage, `reports/${currentUser.uid}/`);
-      reportList.innerHTML = "Loading reports...";
+      reportList.innerHTML = "<li>Loading reports...</li>";
 
       listAll(userReportRef)
         .then(res => {
@@ -550,33 +760,48 @@
      * @param {string} fullPath The full path of the report to delete.
      */
     window.deleteReport = function(fullPath) {
-        if (!confirm("Are you sure you want to delete this report?")) {
-            return;
-        }
-        const reportRef = ref(storage, fullPath);
-        deleteObject(reportRef)
-            .then(() => {
-                alert("Report deleted successfully!");
-                loadReports(); // Refresh the report list
-            })
-            .catch(err => {
-                alert("Error deleting report: " + err.message);
-                console.error("Delete report error:", err);
-            });
+        showMessageModal(
+            "Confirm Deletion",
+            "Are you sure you want to delete this report? This action cannot be undone.",
+            [
+                { text: 'No, Cancel', className: 'confirm-no', onClick: () => {} },
+                { text: 'Yes, Delete', className: 'confirm-yes', onClick: () => {
+                    const reportRef = ref(storage, fullPath);
+                    deleteObject(reportRef)
+                        .then(() => {
+                            showMessageModal("Deletion Successful", "Report deleted successfully!");
+                            loadReports(); // Refresh the report list
+                        })
+                        .catch(err => {
+                            showMessageModal("Deletion Failed", "Error deleting report: " + err.message);
+                            console.error("Delete report error:", err);
+                        });
+                }}
+            ]
+        );
     };
 
     /**
      * Handles user logout.
      */
     window.logout = function() {
-        signOut(auth).then(() => {
-            currentUser = null;
-            alert("Logged out successfully!");
-            hideSections();
-        }).catch((error) => {
-            alert("Error logging out: " + error.message);
-            console.error("Logout error:", error);
-        });
+        showMessageModal(
+            "Confirm Logout",
+            "Are you sure you want to log out?",
+            [
+                { text: 'No, Stay Logged In', className: 'confirm-no', onClick: () => {} },
+                { text: 'Yes, Log Out', className: 'confirm-yes', onClick: () => {
+                    signOut(auth).then(() => {
+                        currentUser = null;
+                        showMessageModal("Logged Out", "You have been successfully logged out.");
+                        hideSections();
+                    }).catch((error) => {
+                        showMessageModal("Logout Error", "Error logging out: " + error.message);
+                        console.error("Logout error:", error);
+                    });
+                }}
+            ]
+        );
     };
 
     // Listen for authentication state changes
