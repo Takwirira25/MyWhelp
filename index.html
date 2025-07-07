@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MyWhelp Cloud System</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -36,7 +37,7 @@
       border-radius: 10px;
     }
 
-    input, select, button, textarea {
+    input, textarea, button {
       width: 100%;
       padding: 0.8rem;
       margin-top: 0.5rem;
@@ -78,7 +79,7 @@
       padding: 2rem;
       border-radius: 10px;
       width: 90%;
-      max-width: 600px;
+      max-width: 500px;
     }
 
     footer {
@@ -96,7 +97,7 @@
 
   <div class="container">
     <div class="section" id="auth-section">
-      <h2>User Login / Create Account</h2>
+      <h2>Login / Create Account</h2>
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
       <button onclick="login()">Login</button>
@@ -104,18 +105,18 @@
     </div>
 
     <div class="section hidden" id="upload-section">
-      <h2>Upload File to Admin</h2>
+      <h2>Upload File</h2>
       <input type="file" id="fileInput" />
-      <button onclick="uploadFile()">Upload File</button>
+      <button onclick="uploadFile()">Upload</button>
     </div>
 
     <div class="section hidden" id="download-section">
-      <h2>Download Shared Files</h2>
+      <h2>Download Files</h2>
       <ul id="fileList"></ul>
     </div>
 
     <div class="section hidden" id="report-section">
-      <h2>Create a Report</h2>
+      <h2>Reports</h2>
       <button onclick="openReportModal('weekly')">Weekly Report</button>
       <button onclick="openReportModal('monthly')">Monthly Report</button>
       <button onclick="openReportModal('yearly')">Yearly Report</button>
@@ -123,27 +124,37 @@
   </div>
 
   <footer>
-    &copy; 2025 MyWhelp Cloud System. All rights reserved.
+    &copy; 2025 MyWhelp Cloud System
   </footer>
 
   <!-- Report Modal -->
   <div class="modal" id="reportModal">
     <div class="modal-content">
-      <h3 id="modalTitle">New Report</h3>
-      <textarea id="reportText" rows="10" placeholder="Write your report..."></textarea>
+      <h3 id="modalTitle">Create Report</h3>
+      <textarea id="reportText" rows="8" placeholder="Write your report here..."></textarea>
       <button onclick="saveReport()">Save Report</button>
       <button onclick="closeReportModal()">Cancel</button>
     </div>
   </div>
 
-  <!-- Firebase + Script -->
+  <!-- Verification Modal -->
+  <div class="modal" id="verifyModal">
+    <div class="modal-content">
+      <h3>Email Verification</h3>
+      <p>Enter the 5-digit code sent to your email:</p>
+      <input type="text" id="codeInput" maxlength="5" placeholder="Enter Code" />
+      <button onclick="checkVerificationCode()">Verify</button>
+      <button onclick="closeVerifyModal()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getAuth,
       signInWithEmailAndPassword,
       createUserWithEmailAndPassword,
-      sendEmailVerification,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
@@ -154,7 +165,8 @@
       getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-    // Config (your data)
+    emailjs.init("YOUR_PUBLIC_KEY"); // 🔁 REPLACE with your actual public key
+
     const firebaseConfig = {
       apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
       authDomain: "samrad-quiz.firebaseapp.com",
@@ -168,6 +180,8 @@
     const auth = getAuth(app);
     const storage = getStorage(app);
 
+    let generatedCode = '';
+    let tempUserData = null;
     let currentUser = null;
     let reportType = '';
 
@@ -189,10 +203,6 @@
       const password = document.getElementById("password").value;
       signInWithEmailAndPassword(auth, email, password)
         .then(({ user }) => {
-          if (!user.emailVerified) {
-            alert("Please verify your email before continuing.");
-            return;
-          }
           currentUser = user;
           showSections();
         })
@@ -202,28 +212,51 @@
     window.register = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+
       createUserWithEmailAndPassword(auth, email, password)
         .then(({ user }) => {
-          sendEmailVerification(user).then(() => {
-            alert("Verification email sent. Please verify and then login.");
-          });
+          generatedCode = Math.floor(10000 + Math.random() * 90000).toString();
+          tempUserData = user;
+
+          emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+            to_email: email,
+            code: generatedCode
+          })
+          .then(() => {
+            alert("Verification code sent to your email.");
+            openVerifyModal();
+          })
+          .catch(err => alert("Failed to send verification email."));
         })
-        .catch(err => alert("Signup error: " + err.message));
+        .catch(err => alert("Registration error: " + err.message));
     };
 
-    onAuthStateChanged(auth, user => {
-      if (user && user.emailVerified) {
-        currentUser = user;
+    window.checkVerificationCode = function () {
+      const entered = document.getElementById("codeInput").value;
+      if (entered === generatedCode) {
+        closeVerifyModal();
+        currentUser = tempUserData;
+        alert("Verified successfully!");
         showSections();
+      } else {
+        alert("Incorrect code.");
       }
-    });
+    };
+
+    function openVerifyModal() {
+      document.getElementById("verifyModal").style.display = "flex";
+    }
+
+    function closeVerifyModal() {
+      document.getElementById("verifyModal").style.display = "none";
+    }
 
     window.uploadFile = function () {
       const file = document.getElementById("fileInput").files[0];
-      if (!file) return alert("Choose a file.");
+      if (!file) return alert("Select a file first.");
       const storageRef = ref(storage, `uploads/${file.name}`);
       uploadBytes(storageRef, file).then(() => {
-        alert("File uploaded.");
+        alert("File uploaded!");
         loadFiles();
       });
     };
@@ -244,7 +277,6 @@
       });
     }
 
-    // REPORT MODAL
     const modal = document.getElementById("reportModal");
     const modalTitle = document.getElementById("modalTitle");
     const reportText = document.getElementById("reportText");
@@ -261,18 +293,25 @@
     };
 
     window.saveReport = function () {
-      if (!currentUser) return alert("You must be logged in.");
+      if (!currentUser) return alert("Not logged in.");
       const content = reportText.value.trim();
-      if (!content) return alert("Report is empty.");
+      if (!content) return alert("Write something.");
       const now = new Date();
       const fileName = `${reportType}_report_${now.toISOString()}.txt`;
       const blob = new Blob([content], { type: "text/plain" });
       const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
       uploadBytes(reportRef, blob).then(() => {
-        alert("Report saved!");
+        alert("Report saved.");
         closeReportModal();
       });
     };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        showSections();
+      }
+    });
   </script>
 </body>
 </html>
