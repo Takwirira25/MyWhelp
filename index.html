@@ -238,7 +238,7 @@
   </footer>
 
   <!-- Report Modal (for writing reports) -->
-<div class="modal hidden" id="reportModal">
+<div class="modal" id="reportModal">
   <div class="modal-content">
     <h3 id="modalTitle">Create Report</h3>
     <p id="reportGreeting" style="margin-bottom:1rem;"></p>
@@ -251,6 +251,7 @@
     <button onclick="closeReportModal()">Cancel</button>
   </div>
 </div>
+
 
 
   <!-- Verification Modal (for email verification during registration) -->
@@ -421,11 +422,12 @@
       }
 
       signInWithEmailAndPassword(auth, email, password)
-        .then(({ user }) => {
-          currentUser = user;
-          showMessageModal("Login Success", "You have successfully logged in!");
-          showSections();
-        })
+  .then(({ user }) => {
+    currentUser = user;
+    showMessageModal("Login Success", "You have successfully logged in!");
+    showSections();
+  })
+
         .catch(err => showMessageModal("Login Failed", "Error: " + err.message));
     };
 
