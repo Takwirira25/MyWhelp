@@ -189,14 +189,48 @@
     const uploadSection = document.getElementById("upload-section");
     const downloadSection = document.getElementById("download-section");
     const reportSection = document.getElementById("report-section");
+    <div class="section hidden" id="my-reports-section">
+      <h2>My Saved Reports</h2>
+      <ul id="reportList"></ul>
+    </div>
 
-    function showSections() {
-      authSection.classList.add("hidden");
-      uploadSection.classList.remove("hidden");
-      downloadSection.classList.remove("hidden");
-      reportSection.classList.remove("hidden");
-      loadFiles();
+   function showSections() {
+  authSection.classList.add("hidden");
+  uploadSection.classList.remove("hidden");
+  downloadSection.classList.remove("hidden");
+  reportSection.classList.remove("hidden");
+  document.getElementById("my-reports-section").classList.remove("hidden");
+
+  loadFiles();
+  loadReports();
+}
+
+function loadReports() {
+  if (!currentUser) return;
+
+  const userReportRef = ref(storage, `reports/${currentUser.uid}/`);
+  const reportList = document.getElementById("reportList");
+  reportList.innerHTML = "Loading...";
+
+  listAll(userReportRef).then(res => {
+    reportList.innerHTML = "";
+    if (res.items.length === 0) {
+      reportList.innerHTML = "<li>No reports saved yet.</li>";
+      return;
     }
+
+    res.items.forEach(itemRef => {
+      getDownloadURL(itemRef).then(url => {
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${url}" target="_blank">${itemRef.name}</a>`;
+        reportList.appendChild(li);
+      });
+    });
+  }).catch(err => {
+    console.error("Failed to list reports:", err);
+    reportList.innerHTML = "<li>Error loading reports.</li>";
+  });
+}
 
     window.login = function () {
       const email = document.getElementById("email").value;
@@ -301,8 +335,11 @@
       const blob = new Blob([content], { type: "text/plain" });
       const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
       uploadBytes(reportRef, blob).then(() => {
-        alert("Report saved.");
-        closeReportModal();
+  alert("Report saved!");
+  closeReportModal();
+  loadReports(); // Refresh report list
+});
+
       });
     };
 
