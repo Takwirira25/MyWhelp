@@ -398,29 +398,35 @@
     /**
      * Handles user login with email and password.
      */
-    window.login = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+   window.login = function () {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-      if (!email || !password) {
-        showMessageModal("Login Error", "Please enter both email and password.");
-        return;
-      }
+  if (!email || !password) {
+    showMessageModal("Login Error", "Please enter both email and password.");
+    return;
+  }
 
-      signInWithEmailAndPassword(auth, email, password)
-  .then(({ user }) => {
-    currentUser = user;
-    showMessageModal("Login Success", "You have successfully logged in!");
-    showSections();
-  })
+  console.log("Attempting login with:", email); // ✅ Add this
 
-        .catch(err => showMessageModal("Login Failed", "Error: " + err.message));
-    };
+  signInWithEmailAndPassword(auth, email, password)
+    .then(({ user }) => {
+      console.log("Login successful", user); // ✅ Add this
+      currentUser = user;
+      showMessageModal("Login Success", "You have successfully logged in!");
+      showSections();
+    })
+    .catch(err => {
+      console.error("Login failed:", err); // ✅ Add this
+      showMessageModal("Login Failed", "Error: " + err.message);
+    });
+};
+
 
     /**
      * Handles user registration with email and password, then sends a verification email.
      */
-    window.register = function () {
+   window.register = function () {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
@@ -429,13 +435,12 @@
     return;
   }
 
-  if (password.length < 6) {
-    showMessageModal("Registration Error", "Password should be at least 6 characters.");
-    return;
-  }
+  console.log("Attempting registration with:", email); // ✅ Add this
 
   createUserWithEmailAndPassword(auth, email, password)
     .then(async ({ user }) => {
+      console.log("Registration successful", user); // ✅ Add this
+
       const fullName = prompt("Enter your full name:");
       if (fullName) {
         const { updateProfile } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
@@ -444,12 +449,14 @@
 
       currentUser = user;
       showMessageModal("Registration Successful", "Your account has been created and you are now logged in.");
-      showSections();  // Immediately show sections without verification
+      showSections();
     })
     .catch(err => {
+      console.error("Registration failed:", err); // ✅ Add this
       showMessageModal("Registration Failed", "Error: " + err.message);
     });
 };
+
 
     /**
      * Uploads a selected file to Firebase Storage.
