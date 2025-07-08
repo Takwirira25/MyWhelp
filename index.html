@@ -746,6 +746,7 @@
     };
 
     /**
+        /**
      * Saves the created report to Firebase Storage.
      */
     window.saveReport = function () {
@@ -788,23 +789,18 @@ ${content}
                 reportModal.style.display = "none"; // Hide report modal immediately
                 loadReports(); // Refresh list
 
-                // Show 5-second countdown message
-                messageModalTitle.innerText = "Report Saved!";
-                messageModalText.innerText = "Your report has been saved successfully. Closing in 5 seconds...";
-                messageModalButtons.innerHTML = "";
-                messageModal.style.display = "flex";
-
-                setTimeout(() => {
-                    showMessageModal("Next Action", "Choose what to do next:", [
-                        { text: "Go to My Reports", onClick: () => showSection('reports-section') },
-                        { text: "Write Another Report", onClick: () => openReportModal(reportType) }
-                    ]);
-                }, 5000);
+                // Show confirmation message and return to dashboard on OK
+                showMessageModal(
+                    "Report Saved!",
+                    "Your report has been saved successfully.",
+                    [{ text: 'OK', onClick: () => showSection('dashboard-section') }] // Return to dashboard
+                );
             })
             .catch(err => {
                 showMessageModal("Save Failed", "Error: " + err.message);
             });
     };
+
 
     /**
      * Loads and displays the current user's saved reports from Firebase Storage.
