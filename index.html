@@ -134,28 +134,39 @@
 
         <!-- Files Section -->
         <div id="files-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
-          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Files</h2>
+    <h2 class="text-3xl font-bold mb-6 text-yellow-300">Files</h2>
 
-          <div class="mb-6">
-            <h3 class="text-xl font-semibold mb-3 text-blue-300">Upload File</h3>
-            <input type="file" id="fileInput" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button onclick="uploadFile()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Upload</button>
-          </div>
-
-          <div class="mb-6">
-            <h3 class="text-xl font-semibold mb-3 text-green-300">Your Stored Files</h3>
-            <div class="relative mb-4">
-              <input type="text" id="fileSearchInput" placeholder="Search files..." class="w-full p-3 pr-10 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"/>
-              <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </div>
-            <ul id="fileList" class="space-y-3">
-              <!-- Files will be loaded here -->
-              <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
-                <span class="text-gray-300">No files uploaded yet.</span>
-              </li>
+    <nav class="text-sm text-gray-400 mb-4">
+        <ul id="breadcrumb-list" class="flex space-x-2">
+            <li><a href="#" onclick="navigateToFolder('')" class="text-blue-400 hover:underline">Root</a></li>
             </ul>
-          </div>
+    </nav>
+
+    <div class="mb-6 border-b border-gray-700 pb-6">
+        <h3 class="text-xl font-semibold mb-3 text-blue-300">Upload File</h3>
+        <input type="file" id="fileInput" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button onclick="uploadFile()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Upload File to Current Folder</button>
+    </div>
+
+    <div class="mb-6 border-b border-gray-700 pb-6">
+        <h3 class="text-xl font-semibold mb-3 text-green-300">Create New Folder</h3>
+        <input type="text" id="newFolderNameInput" placeholder="New folder name" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" />
+        <button onclick="createFolder()" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 transition-colors duration-300 shadow-md">Create Folder</button>
+    </div>
+
+    <div class="mb-6">
+        <h3 class="text-xl font-semibold mb-3 text-yellow-300">Current Folder Contents</h3>
+        <div class="relative mb-4">
+            <input type="text" id="fileSearchInput" placeholder="Search files and folders..." class="w-full p-3 pr-10 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"/>
+            <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
+        <ul id="fileList" class="space-y-3">
+            <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
+                <span class="text-gray-300">Loading content...</span>
+            </li>
+        </ul>
+    </div>
+</div>
 
         <!-- Reports Section -->
         <div id="reports-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
@@ -362,7 +373,15 @@
       getDownloadURL,
       deleteObject
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  listAll,
+  getDownloadURL,
+  deleteObject,
+  getMetadata // <--- ADD THIS
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
     // Initialize EmailJS with your public key.
     // IMPORTANT: Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS public key.
     emailjs.init("TEn7z0_oc1iqKHPVi"); // REMEMBER TO REPLACE THIS WITH YOUR ACTUAL PUBLIC KEY
@@ -410,7 +429,14 @@
     const dashboardUsername = document.getElementById("dashboard-username");
     const totalFilesSpan = document.getElementById("total-files");
     const storageUsedSpan = document.getElementById("storage-used");
+    const fileList = document.getElementById("fileList");
 
+
+    // New Folder Management elements
+    const breadcrumbList = document.getElementById("breadcrumb-list");
+    const newFolderNameInput = document.getElementById("newFolderNameInput");
+
+    let currentFolderPath = ''; // Tracks the current folder path within the user's uploads
     // Generic Message Modal elements
     const messageModal = document.getElementById("messageModal");
     const messageModalTitle = document.getElementById("messageModalTitle");
@@ -589,94 +615,164 @@ function closeModal() {
      * Uploads a selected file to Firebase Storage.
      */
     window.uploadFile = function () {
-      if (!currentUser) {
-        showMessageModal("Upload Error", "You must be logged in to upload files.");
-        return;
-      }
-      const fileInput = document.getElementById("fileInput");
-      const file = fileInput.files[0];
-      if (!file) {
-        showMessageModal("Upload Error", "Please select a file first.");
-        return;
-      }
+  if (!currentUser) {
+    showMessageModal("Upload Error", "You must be logged in to upload files.");
+    return;
+  }
+  const fileInput = document.getElementById("fileInput");
+  const file = fileInput.files[0];
+  if (!file) {
+    showMessageModal("Upload Error", "Please select a file first.");
+    return;
+  }
 
-      const storageRef = ref(storage, `uploads/${currentUser.uid}/${file.name}`);
-      uploadBytes(storageRef, file)
-        .then(() => {
-          fileInput.value = ''; // Clear the file input
-          loadFiles(); // Refresh the file list
-          showMessageModal(
-            "Upload Successful!",
-            "Your file has been uploaded successfully.",
-            [
-              { text: 'Go to Files', onClick: () => showSection('files-section') },
-              { text: 'Upload Another File', onClick: () => {} }
-            ]
-          );
-        })
-        .catch(err => showMessageModal("Upload Failed", "Error: " + err.message));
-    };
+  // Modify storageRef to include currentFolderPath
+  const storageRef = ref(storage, `uploads/${currentUser.uid}/${currentFolderPath}${file.name}`);
+  uploadBytes(storageRef, file)
+    .then(() => {
+      fileInput.value = ''; // Clear the file input
+      loadFiles(); // Refresh the file list
+      showMessageModal(
+        "Upload Successful!",
+        "Your file has been uploaded successfully into the current folder.",
+        [
+          { text: 'Go to Files', onClick: () => showSection('files-section'), className: 'bg-green-600' },
+          { text: 'Upload Another File', onClick: () => {} }
+        ]
+      );
+    })
+    .catch(err => showMessageModal("Upload Failed", "Error: " + err.message));
+};
 
     /**
      * Loads and displays the current user's uploaded files from Firebase Storage.
      * Also updates storage usage statistics.
      */
+    /**
+     * Loads and displays the current user's files and folders from Firebase Storage.
+     * Updates storage usage statistics and breadcrumbs.
+     */
     function loadFiles() {
-      if (!currentUser) {
-        fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Please log in to see your files.</li>";
-        totalFilesSpan.innerText = '0';
-        storageUsedSpan.innerText = '0 MB';
-        return;
-      }
-
-      const userFilesRef = ref(storage, `uploads/${currentUser.uid}/`);
-      fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Loading files...</li>";
-      let totalSize = 0;
-      let fileCount = 0;
-
-      listAll(userFilesRef)
-        .then(res => {
-          fileList.innerHTML = ""; // Clear "Loading..."
-          if (res.items.length === 0) {
-            fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>No files uploaded yet.</li>";
+        if (!currentUser) {
+            fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Please log in to see your files.</li>";
             totalFilesSpan.innerText = '0';
             storageUsedSpan.innerText = '0 MB';
             return;
-          }
+        }
 
-          res.items.forEach(itemRef => {
-            getDownloadURL(itemRef).then(url => {
-              // Get file metadata to calculate size
-              itemRef.getMetadata().then(metadata => {
-                totalSize += metadata.size;
-                fileCount++;
+        const userBaseRef = `uploads/${currentUser.uid}/`;
+        const currentRefPath = userBaseRef + currentFolderPath;
+        const storageRef = ref(storage, currentRefPath);
 
-                const li = document.createElement("li");
-                li.className = "bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap";
-                li.innerHTML = `
-                  <a href="${url}" target="_blank" class="text-blue-400 hover:underline flex-grow mr-4 break-all">${itemRef.name}</a>
-                  <div class="flex space-x-2 mt-2 md:mt-0">
-                    <button onclick="viewFileHistory('${itemRef.fullPath}')" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300 text-sm">History</button>
-                    <button onclick="shareFile('${itemRef.name}')" class="bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors duration-300 text-sm">Share</button>
-                    <button onclick="deleteFile('${itemRef.fullPath}')" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 text-sm">Delete</button>
-                  </div>
-                `;
-                fileList.appendChild(li);
+        fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Loading content...</li>";
+        let totalSize = 0;
+        let fileCount = 0;
 
-                totalFilesSpan.innerText = fileCount;
-                storageUsedSpan.innerText = (totalSize / (1024 * 1024)).toFixed(2) + ' MB'; // Convert bytes to MB
-              }).catch(err => console.error("Error getting file metadata:", err));
+        // Update breadcrumbs
+        updateBreadcrumbs();
+
+        listAll(storageRef)
+            .then(res => {
+                fileList.innerHTML = ""; // Clear "Loading..."
+                const itemsToDisplay = [];
+
+                // Add "Up" button if not in root
+                if (currentFolderPath !== '') {
+                    itemsToDisplay.push({
+                        type: 'up-folder',
+                        name: '..',
+                        path: currentFolderPath.substring(0, currentFolderPath.lastIndexOf('/')) // Go up one level
+                    });
+                }
+
+                // Process prefixes (folders)
+                res.prefixes.forEach(prefixRef => {
+                    // Extract folder name from prefix path relative to currentRefPath
+                    const folderName = prefixRef.fullPath.substring(currentRefPath.length);
+                    if (folderName && !folderName.includes('/')) { // Ensure it's a direct subfolder
+                        itemsToDisplay.push({
+                            type: 'folder',
+                            name: folderName,
+                            path: folderName + '/' // Append '/' for folder paths
+                        });
+                    }
+                });
+
+                // Process items (files)
+                const filePromises = res.items.map(itemRef => {
+                    return Promise.all([
+                        getDownloadURL(itemRef),
+                        getMetadata(itemRef) // Get metadata for size
+                    ]).then(([url, metadata]) => {
+                        totalSize += metadata.size;
+                        fileCount++;
+                        return {
+                            type: 'file',
+                            name: itemRef.name,
+                            url: url,
+                            fullPath: itemRef.fullPath // Keep fullPath for delete
+                        };
+                    }).catch(err => {
+                        console.error("Error getting file info:", err);
+                        return null; // Handle errors for individual files
+                    });
+                });
+
+                Promise.all(filePromises).then(files => {
+                    files.filter(f => f !== null).forEach(file => itemsToDisplay.push(file));
+
+                    // Sort items: folders first, then files, both alphabetically
+                    itemsToDisplay.sort((a, b) => {
+                        if (a.type === 'up-folder') return -1; // ".." always first
+                        if (b.type === 'up-folder') return 1;
+
+                        if (a.type === 'folder' && b.type !== 'folder') return -1;
+                        if (b.type === 'folder' && a.type !== 'folder') return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    if (itemsToDisplay.length === 0) {
+                        fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>This folder is empty.</li>";
+                    } else {
+                        itemsToDisplay.forEach(item => {
+                            const li = document.createElement("li");
+                            li.className = "bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap";
+
+                            if (item.type === 'folder' || item.type === 'up-folder') {
+                                const folderPathToNavigate = item.path === '..' ? currentFolderPath.substring(0, currentFolderPath.lastIndexOf('/')) : currentFolderPath + item.path;
+                                li.innerHTML = `
+                                    <button onclick="navigateToFolder('${folderPathToNavigate}')" class="text-blue-400 hover:underline flex-grow mr-4 break-all text-left">
+                                        ${item.type === 'up-folder' ? '⬆️ ' : '📁 '} ${item.name}
+                                    </button>
+                                    ${item.type === 'folder' ? `<div class="flex space-x-2 mt-2 md:mt-0">
+                                        <button onclick="deleteFolder('${currentFolderPath + item.name + '/'}')" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 text-sm">Delete</button>
+                                    </div>` : ''}
+                                `;
+                            } else { // It's a file
+                                li.innerHTML = `
+                                    <a href="${item.url}" target="_blank" class="text-blue-400 hover:underline flex-grow mr-4 break-all">${item.name}</a>
+                                    <div class="flex space-x-2 mt-2 md:mt-0">
+                                        <button onclick="viewFileHistory('${item.fullPath}')" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300 text-sm">History</button>
+                                        <button onclick="shareFile('${item.name}')" class="bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors duration-300 text-sm">Share</button>
+                                        <button onclick="deleteFile('${item.fullPath}')" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 text-sm">Delete</button>
+                                    </div>
+                                `;
+                            }
+                            fileList.appendChild(li);
+                        });
+                    }
+
+                    totalFilesSpan.innerText = fileCount;
+                    storageUsedSpan.innerText = (totalSize / (1024 * 1024)).toFixed(2) + ' MB'; // Convert bytes to MB
+                });
+            })
+            .catch(err => {
+                console.error("Failed to list files or folders:", err);
+                fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Error loading content.</li>";
+                totalFilesSpan.innerText = '0';
+                storageUsedSpan.innerText = '0 MB';
             });
-          });
-        })
-        .catch(err => {
-          console.error("Failed to list files:", err);
-          fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Error loading files.</li>";
-          totalFilesSpan.innerText = '0';
-          storageUsedSpan.innerText = '0 MB';
-        });
     }
-
     /**
      * Simulates viewing file history (version control).
      * @param {string} fullPath - The full path of the file.
@@ -697,27 +793,32 @@ function closeModal() {
      * Deletes a file from Firebase Storage.
      * @param {string} fullPath The full path of the file to delete.
      */
-    window.deleteFile = function(fullPath) {
-        showMessageModal(
-            "Confirm Deletion",
-            "Are you sure you want to delete this file? This action cannot be undone.",
-            [
-                { text: 'No, Cancel', className: 'confirm-no', onClick: () => {} },
-                { text: 'Yes, Delete', className: 'confirm-yes', onClick: () => {
-                    const fileRef = ref(storage, fullPath);
-                    deleteObject(fileRef)
-                        .then(() => {
-                            showMessageModal("Deletion Successful", "File deleted successfully!");
-                            loadFiles(); // Refresh the file list
-                        })
-                        .catch(err => {
-                            showMessageModal("Deletion Failed", "Error deleting file: " + err.message);
-                            console.error("Delete file error:", err);
-                        });
-                }}
-            ]
-        );
-    };
+    /**
+ * Deletes a file from Firebase Storage.
+ * @param {string} fullPath The full path of the file to delete.
+ */
+window.deleteFile = function(fullPath) {
+    const fileName = fullPath.split('/').pop(); // Get just the file name for the message
+    showMessageModal(
+        "Confirm Deletion",
+        `Are you sure you want to delete "${fileName}"? This action cannot be undone.`,
+        [
+            { text: 'No, Cancel', className: 'confirm-no', onClick: () => {} },
+            { text: 'Yes, Delete', className: 'confirm-yes', onClick: () => {
+                const fileRef = ref(storage, fullPath);
+                deleteObject(fileRef)
+                    .then(() => {
+                        showMessageModal("Deletion Successful", `"${fileName}" deleted successfully!`);
+                        loadFiles(); // Refresh the file list
+                    })
+                    .catch(err => {
+                        showMessageModal("Deletion Failed", "Error deleting file: " + err.message);
+                        console.error("Delete file error:", err);
+                    });
+            }}
+        ]
+    );
+};
 
     /**
      * Opens the report creation modal with the specified report type.
@@ -897,6 +998,135 @@ ${content}
             ]
         );
     };
+    /**
+ * Updates the breadcrumbs navigation based on the currentFolderPath.
+ */
+function updateBreadcrumbs() {
+    breadcrumbList.innerHTML = '';
+    let pathParts = currentFolderPath.split('/').filter(p => p); // Filter out empty strings
+    let currentPathAccumulator = '';
+
+    // Root
+    const rootLi = document.createElement('li');
+    rootLi.innerHTML = `<a href="#" onclick="navigateToFolder('')" class="text-blue-400 hover:underline">Root</a>`;
+    breadcrumbList.appendChild(rootLi);
+
+    pathParts.forEach((part, index) => {
+        currentPathAccumulator += part + '/';
+        const li = document.createElement('li');
+        li.className = 'flex items-center';
+        li.innerHTML = `
+            <svg class="w-4 h-4 text-gray-500 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <a href="#" onclick="navigateToFolder('${currentPathAccumulator}')" class="text-blue-400 hover:underline">${part}</a>
+        `;
+        breadcrumbList.appendChild(li);
+    });
+}
+
+/**
+ * Navigates to a specified folder path.
+ * @param {string} path The new folder path to navigate to (e.g., 'folder1/', 'folder1/subfolder/', or '' for root).
+ */
+window.navigateToFolder = function(path) {
+    // Ensure path ends with a '/' if not empty, for consistent folder representation
+    currentFolderPath = path ? (path.endsWith('/') ? path : path + '/') : '';
+    loadFiles(); // Reload files for the new path
+};
+
+/**
+ * Creates a new "folder" in Firebase Storage by uploading a tiny placeholder file.
+ */
+window.createFolder = function() {
+    if (!currentUser) {
+        showMessageModal("Error", "You must be logged in to create folders.");
+        return;
+    }
+
+    const folderName = newFolderNameInput.value.trim();
+    if (!folderName) {
+        showMessageModal("Error", "Please enter a folder name.");
+        return;
+    }
+
+    // Basic validation: no slashes in folder names to avoid confusion
+    if (folderName.includes('/') || folderName.includes('\\')) {
+        showMessageModal("Error", "Folder names cannot contain slashes (/) or backslashes (\\).");
+        return;
+    }
+
+    // Firebase Storage doesn't have "empty folders". Create a placeholder file.
+    const placeholderFileName = ".placeholder"; // Hidden file
+    const folderPath = `${currentFolderPath}${folderName}/`;
+    const storageRef = ref(storage, `uploads/${currentUser.uid}/${folderPath}${placeholderFileName}`);
+
+    // Upload a tiny blob as a placeholder
+    const placeholderBlob = new Blob([], { type: "application/octet-stream" });
+
+    uploadBytes(storageRef, placeholderBlob)
+        .then(() => {
+            newFolderNameInput.value = ''; // Clear input
+            showMessageModal("Folder Created", `Folder "${folderName}" created successfully!`);
+            loadFiles(); // Refresh the file list
+        })
+        .catch(err => {
+            showMessageModal("Folder Creation Failed", "Error creating folder: " + err.message);
+            console.error("Create folder error:", err);
+        });
+};
+
+/**
+ * Deletes a folder and all its contents (files and subfolders recursively).
+ * @param {string} folderFullPath The full path of the folder to delete (e.g., 'folder1/subfolder2/').
+ */
+window.deleteFolder = function(folderFullPath) {
+    if (!currentUser) {
+        showMessageModal("Error", "You must be logged in to delete folders.");
+        return;
+    }
+
+    // Extract the folder name for the confirmation message
+    const parts = folderFullPath.split('/').filter(p => p);
+    const folderName = parts.pop() || ''; // Get the last part, which is the folder name
+
+    showMessageModal(
+        "Confirm Folder Deletion",
+        `Are you sure you want to delete the folder "${folderName}" and ALL its contents? This action cannot be undone.`,
+        [
+            { text: 'No, Cancel', className: 'confirm-no', onClick: () => {} },
+            { text: 'Yes, Delete All', className: 'confirm-yes', onClick: async () => {
+                const folderRef = ref(storage, `uploads/${currentUser.uid}/${folderFullPath}`);
+
+                try {
+                    // Recursively delete all items within the folder
+                    const deleteRecursive = async (currentRef) => {
+                        const listResult = await listAll(currentRef);
+                        const promises = [];
+
+                        // Delete files
+                        listResult.items.forEach(itemRef => {
+                            promises.push(deleteObject(itemRef));
+                        });
+
+                        // Recurse into sub-prefixes (folders)
+                        listResult.prefixes.forEach(prefixRef => {
+                            promises.push(deleteRecursive(prefixRef));
+                        });
+
+                        await Promise.all(promises);
+                    };
+
+                    await deleteRecursive(folderRef);
+
+                    showMessageModal("Folder Deleted", `Folder "${folderName}" and its contents have been successfully deleted.`);
+                    loadFiles(); // Refresh the file list
+                } catch (err) {
+                    showMessageModal("Folder Deletion Failed", `Error deleting folder "${folderName}": ` + err.message);
+                    console.error("Delete folder error:", err);
+                }
+            }}
+        ]
+    );
+};
 
     // Listen for authentication state changes
     onAuthStateChanged(auth, user => {
