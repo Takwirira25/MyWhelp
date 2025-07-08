@@ -749,6 +749,9 @@
         /**
      * Saves the created report to Firebase Storage.
      */
+        /**
+     * Saves the created report to Firebase Storage.
+     */
     window.saveReport = function () {
         if (!currentUser) {
             showMessageModal("Save Error", "You must be logged in to save reports.");
@@ -789,11 +792,14 @@ ${content}
                 reportModal.style.display = "none"; // Hide report modal immediately
                 loadReports(); // Refresh list
 
-                // Show confirmation message and return to dashboard on OK
+                // Show confirmation message and return to dashboard on OK click
                 showMessageModal(
                     "Report Saved!",
                     "Your report has been saved successfully.",
-                    [{ text: 'OK', onClick: () => showSection('dashboard-section') }] // Return to dashboard
+                    [{ text: 'OK', onClick: () => {
+                        console.log("OK button clicked, attempting to show dashboard."); // Debugging log
+                        showSection('dashboard-section'); // Return to dashboard
+                    }}]
                 );
             })
             .catch(err => {
