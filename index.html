@@ -4,281 +4,346 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MyWhelp Cloud System</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap" rel="stylesheet"/>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #2c3e50, #34495e);
-      color: #fff;
-    }
-
-    header {
-      background: #1c1c3c;
-      padding: 1rem 2rem;
-      text-align: center;
+    /* Custom styles for the Cinzel font for the header */
+    .font-cinzel {
       font-family: 'Cinzel', serif;
-      font-size: 2rem;
-      color: gold;
     }
-
-    .container {
-      max-width: 1000px;
-      margin: auto;
-      padding: 2rem;
+    /* Ensure body uses Inter font by default for consistent styling */
+    body {
+      font-family: 'Inter', sans-serif;
     }
-
-    .section {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid gold;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      border-radius: 10px;
-    }
-
-    input, textarea, button {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 0.5rem;
-      margin-bottom: 1rem;
-      border: none;
-      border-radius: 5px;
-    }
-
-    input, textarea {
-      background: #ecf0f1;
-      color: #2c3e50;
-    }
-
-    button {
-      background: gold;
-      color: #2c3e50;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s ease; /* Added transition for hover effect */
-    }
-
-    button:hover {
-      background: #e6b800; /* Darker gold on hover */
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Specific styles for auth fields - hidden by default */
-    .auth-fields {
-      display: none;
-    }
-
-    /* General Modal Styling */
+    /* Modals need flex display to center content */
     .modal {
-      display: none;
+      display: none; /* Hidden by default */
       position: fixed;
       z-index: 99;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
       background: rgba(0,0,0,0.8);
       justify-content: center;
       align-items: center;
     }
-
-    .modal-content {
-      background: #fff;
-      color: #000;
-      padding: 2rem;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
-      text-align: center; /* Centered modal content */
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-
-    .modal-content button {
-        margin-top: 10px;
-        width: auto; /* Allow buttons to size based on content */
-        padding: 0.7rem 1.5rem;
-        margin-left: 10px;
-        margin-right: 10px;
-    }
-
-    /* Specific button styling for delete confirmation */
-    .modal-content .confirm-no {
-        background: #3498db; /* Blue for 'No' */
-    }
-    .modal-content .confirm-no:hover {
-        background: #2980b9;
-    }
-    .modal-content .confirm-yes {
-        background: #e74c3c; /* Red for 'Yes' */
-    }
-    .modal-content .confirm-yes:hover {
-        background: #c0392b;
-    }
-
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background: #1c1c3c;
-      font-size: 0.9rem;
-    }
-
-    ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    li {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 10px;
-        margin-bottom: 5px;
-        border-radius: 5px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap; /* Allow items to wrap on smaller screens */
-    }
-
-    li a {
-        color: #fff;
-        text-decoration: none;
-        word-break: break-all; /* Prevents long filenames from overflowing */
-        flex-grow: 1; /* Allow link to take available space */
-        margin-right: 10px; /* Space between link and button */
-    }
-
-    li a:hover {
-        text-decoration: underline;
-    }
-
-    li button {
-        width: auto;
-        padding: 5px 10px;
-        margin: 0;
-        margin-left: auto; /* Push button to the right */
-        font-size: 0.8rem;
-        background: #e74c3c; /* Red for delete button */
-        color: white;
-    }
-
-    li button:hover {
-        background: #c0392b;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 600px) {
-        .container {
-            padding: 1rem;
-        }
-        header {
-            font-size: 1.5rem;
-            padding: 0.8rem 1rem;
-        }
-        .section {
-            padding: 1.5rem;
-        }
-        li {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        li a {
-            margin-bottom: 5px;
-            margin-right: 0;
-        }
-        li button {
-            margin-left: 0;
-            margin-top: 5px;
-            width: 100%;
-        }
-    }
   </style>
 </head>
-<body>
-  <header>
+<body class="bg-gradient-to-r from-gray-800 to-gray-900 text-white min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-gray-900 p-4 text-center font-cinzel text-4xl text-yellow-400 shadow-lg">
     MyWhelp Cloud System
   </header>
 
-  <div class="container">
-    <div class="section" id="auth-section">
-      <h2>Welcome to MyWhelp Cloud System!</h2>
-      <p>MyWhelp is your secure and convenient cloud platform designed to simplify your digital life. Easily **upload and manage your important files**, **create and store detailed reports**, and access your data anytime, anywhere. Experience seamless organization and reliable storage with MyWhelp.</p>
+  <div class="container mx-auto p-4 flex-grow">
+    <!-- Authentication Section -->
+    <div id="auth-section" class="bg-gray-800 border border-yellow-500 p-8 mb-8 rounded-lg shadow-xl max-w-md mx-auto">
+      <h2 class="text-3xl font-bold mb-4 text-center">Welcome to MyWhelp Cloud System!</h2>
+      <p class="text-gray-300 mb-6 text-center">MyWhelp is your secure and convenient cloud platform designed to simplify your digital life. Easily **upload and manage your important files**, **create and store detailed reports**, and access your data anytime, anywhere. Experience seamless organization and reliable storage with MyWhelp.</p>
 
-      <div id="login-fields" class="auth-fields">
-        <h3>Login to your account</h3>
-        <input type="email" id="loginEmail" placeholder="Email" />
-        <input type="password" id="loginPassword" placeholder="Password" />
-        <button onclick="login()">Login</button>
+      <!-- Login fields - initially hidden -->
+      <div id="login-fields" class="auth-fields hidden">
+        <h3 class="text-2xl font-semibold mb-4 text-yellow-300">Login to your account</h3>
+        <input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+        <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 mb-6 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+        <button onclick="login()" class="w-full bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-md hover:bg-yellow-600 transition-colors duration-300 shadow-md">Login</button>
       </div>
 
-      <div id="register-fields" class="auth-fields">
-        <h3>Create a new account</h3>
-        <input type="email" id="registerEmail" placeholder="Email" />
-        <input type="password" id="registerPassword" placeholder="Password" />
-        <input type="password" id="confirmPassword" placeholder="Confirm Password" />
-        <button onclick="register()">Create Account</button>
+      <!-- Register fields - initially hidden -->
+      <div id="register-fields" class="auth-fields hidden">
+        <h3 class="text-2xl font-semibold mb-4 text-yellow-300">Create a new account</h3>
+        <input type="email" id="registerEmail" placeholder="Email" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+        <input type="password" id="registerPassword" placeholder="Password" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" class="w-full p-3 mb-6 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+        <button onclick="register()" class="w-full bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-md hover:bg-yellow-600 transition-colors duration-300 shadow-md">Create Account</button>
       </div>
 
-      <button onclick="showLoginFields()">Login</button>
-      <button onclick="showRegisterFields()">Create Account</button>
+      <!-- Buttons to reveal specific forms -->
+      <div class="flex justify-center space-x-4 mt-6">
+        <button onclick="showLoginFields()" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Login</button>
+        <button onclick="showRegisterFields()" class="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 transition-colors duration-300 shadow-md">Create Account</button>
+      </div>
     </div>
 
-    <div class="section hidden" id="upload-section">
-      <h2>Upload File</h2>
-      <input type="file" id="fileInput" />
-      <button onclick="uploadFile()">Upload</button>
-    </div>
+    <!-- Main Application Sections (hidden until logged in) -->
+    <div id="app-sections" class="hidden flex flex-col lg:flex-row gap-8">
 
-    <div class="section hidden" id="download-section">
-      <h2>Download Files</h2>
-      <ul id="fileList"></ul>
-    </div>
+      <!-- Sidebar Navigation -->
+      <nav class="lg:w-1/4 bg-gray-800 p-6 rounded-lg shadow-xl">
+        <h3 class="text-2xl font-semibold mb-6 text-yellow-300">Navigation</h3>
+        <ul class="space-y-4">
+          <li><button onclick="showSection('dashboard-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Dashboard</button></li>
+          <li><button onclick="showSection('files-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Files</button></li>
+          <li><button onclick="showSection('reports-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Reports</button></li>
+          <li><button onclick="showSection('collaboration-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Collaboration</button></li>
+          <li><button onclick="showSection('settings-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Settings</button></li>
+          <li><button onclick="showSection('admin-section')" class="w-full text-left py-3 px-4 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors duration-200 text-lg">Admin Panel</button></li>
+          <li><button onclick="logout()" class="w-full text-left py-3 px-4 rounded-md bg-red-600 hover:bg-red-700 transition-colors duration-300 text-lg">Logout</button></li>
+        </ul>
+      </nav>
 
-    <div class="section hidden" id="report-section">
-      <h2>Create Reports</h2>
-      <button onclick="openReportModal('weekly')">Weekly Report</button>
-      <button onclick="openReportModal('monthly')">Monthly Report</button>
-      <button onclick="openReportModal('yearly')">Yearly Report</button>
-    </div>
+      <!-- Content Area -->
+      <div class="lg:w-3/4 flex-grow">
 
-    <div class="section hidden" id="my-reports-section">
-      <h2>My Saved Reports</h2>
-      <ul id="reportList"></ul>
-    </div>
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Dashboard</h2>
+          <p class="text-gray-300 mb-4">Welcome back, <span id="dashboard-username" class="font-semibold text-yellow-400"></span>!</p>
 
-    <div class="section hidden" id="logout-section">
-        <button onclick="logout()">Logout</button>
-    </div>
-  </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-blue-300">Storage Usage</h3>
+              <p class="text-gray-300">Total files: <span id="total-files">0</span></p>
+              <p class="text-gray-300">Total storage used: <span id="storage-used">0 MB</span></p>
+              <div class="w-full bg-gray-600 rounded-full h-2.5 mt-3">
+                <div class="bg-blue-500 h-2.5 rounded-full" style="width: 25%;"></div> <!-- Simulated usage -->
+              </div>
+            </div>
 
-  <footer>
-    &copy; 2025 MyWhelp Cloud System
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-green-300">Recent Activity (Audit Trail)</h3>
+              <ul id="recent-activity-list" class="text-sm text-gray-300 space-y-2">
+                <li><span class="text-gray-400">2025-07-08 10:30 AM:</span> Logged in</li>
+                <li><span class="text-gray-400">2025-07-08 10:25 AM:</span> Uploaded "ProjectPlan.docx"</li>
+                <li><span class="text-gray-400">2025-07-07 04:15 PM:</span> Edited "WeeklyReport_0701.txt"</li>
+              </ul>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-purple-300">Notifications</h3>
+              <ul id="notification-list" class="text-sm text-gray-300 space-y-2">
+                <li><span class="text-gray-400">New shared document: "Team Meeting Notes"</span></li>
+                <li><span class="text-gray-400">Your monthly report is due soon!</span></li>
+              </ul>
+              <button class="mt-4 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-300">View All Notifications</button>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-orange-300">System Status</h3>
+              <p class="text-gray-300">Data Encryption: <span class="text-green-400 font-semibold">Active (At Rest & In Transit)</span></p>
+              <p class="text-gray-300">Automated Backups: <span class="text-green-400 font-semibold">Enabled (Daily)</span></p>
+              <p class="text-gray-300">System Uptime: <span class="text-green-400 font-semibold">99.9%</span></p>
+              <p class="text-gray-300">Scalability: <span class="text-green-400 font-semibold">Elastic & On-Demand</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Files Section -->
+        <div id="files-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Files</h2>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Upload File</h3>
+            <input type="file" id="fileInput" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <button onclick="uploadFile()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Upload</button>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-green-300">Your Stored Files</h3>
+            <div class="relative mb-4">
+              <input type="text" id="fileSearchInput" placeholder="Search files..." class="w-full p-3 pr-10 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <ul id="fileList" class="space-y-3">
+              <!-- Files will be loaded here -->
+              <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
+                <span class="text-gray-300">No files uploaded yet.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Reports</h2>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-purple-300">Create New Report</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button onclick="openReportModal('weekly')" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 transition-colors duration-300 shadow-md">Weekly Report</button>
+              <button onclick="openReportModal('monthly')" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 transition-colors duration-300 shadow-md">Monthly Report</button>
+              <button onclick="openReportModal('yearly')" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 transition-colors duration-300 shadow-md">Yearly Report</button>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-orange-300">My Saved Reports</h3>
+            <ul id="reportList" class="space-y-3">
+              <!-- Reports will be loaded here -->
+              <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
+                <span class="text-gray-300">No reports saved yet.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Collaboration Section -->
+        <div id="collaboration-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Collaboration</h2>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Share Document</h3>
+            <input type="text" placeholder="Document Name" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" placeholder="Recipient Email" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <select class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option>View Only</option>
+              <option>Can Edit</option>
+            </select>
+            <button class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Share</button>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-green-300">Shared With Me</h3>
+            <ul class="space-y-3">
+              <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
+                <span class="text-gray-300">Team Project Plan (View Only)</span>
+                <button class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300">Open</button>
+              </li>
+              <li class="bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap">
+                <span class="text-gray-300">Marketing Strategy (Can Edit)</span>
+                <button class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300">Open</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-purple-300">Document Comments & Versioning</h3>
+            <div class="bg-gray-700 p-4 rounded-md mb-4">
+              <p class="text-gray-300 text-sm mb-2">Comment on "ProjectProposal.docx": "Great start, let's refine section 3." - John Doe</p>
+              <button class="bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors duration-300 text-sm">View History</button>
+            </div>
+            <p class="text-gray-400 text-sm">Version Control ensures you can track changes and revert to any previous state of your documents.</p>
+          </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Settings</h2>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Profile Settings</h3>
+            <input type="text" placeholder="Full Name" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" disabled />
+            <button class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">Update Profile</button>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-green-300">Notification Preferences</h3>
+            <div class="flex items-center mb-2">
+              <input type="checkbox" id="emailNotifications" class="form-checkbox h-5 w-5 text-green-600 rounded" checked>
+              <label for="emailNotifications" class="ml-2 text-gray-300">Email Notifications</label>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" id="inAppNotifications" class="form-checkbox h-5 w-5 text-green-600 rounded" checked>
+              <label for="inAppNotifications" class="ml-2 text-gray-300">In-App Notifications</label>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="text-xl font-semibold mb-3 text-purple-300">Security & Access</h3>
+            <p class="text-gray-300 mb-2">Granular Access Controls: Manage specific permissions for your files and folders.</p>
+            <button class="bg-purple-600 text-white font-bold py-3 px-6 rounded-md hover:bg-purple-700 transition-colors duration-300 shadow-md">Manage Permissions</button>
+            <p class="text-gray-300 mt-4">Single Sign-On (SSO) Integration: Seamlessly log in with your existing enterprise credentials.</p>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-orange-300">System Integration (APIs)</h3>
+            <p class="text-gray-300 mb-2">Our system provides robust APIs for seamless integration with your existing business applications.</p>
+            <button class="bg-orange-600 text-white font-bold py-3 px-6 rounded-md hover:bg-orange-700 transition-colors duration-300 shadow-md">View API Documentation</button>
+            <p class="text-gray-300 mt-4">Customizable Branding: Tailor the look and feel of your cloud system to match your organization's identity.</p>
+          </div>
+        </div>
+
+        <!-- Admin Panel Section -->
+        <div id="admin-section" class="main-app-section bg-gray-800 border border-yellow-500 p-8 rounded-lg shadow-xl hidden">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-300">Admin Panel</h2>
+          <p class="text-red-400 mb-4">Note: This section is for administrative users only.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-blue-300">User Management</h3>
+              <ul class="space-y-2 text-gray-300">
+                <li>John Doe (john.doe@example.com) - Active</li>
+                <li>Jane Smith (jane.smith@example.com) - Active</li>
+                <li>Bob Johnson (bob.j@example.com) - Inactive</li>
+              </ul>
+              <button class="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-300">Add New User</button>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-green-300">System Performance</h3>
+              <p class="text-gray-300">CPU Usage: <span class="text-green-400">15%</span></p>
+              <p class="text-gray-300">Memory Usage: <span class="text-green-400">30%</span></p>
+              <p class="text-gray-300">Network Latency: <span class="text-green-400">20ms</span></p>
+              <button class="mt-4 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-300">View Detailed Metrics</button>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-purple-300">Security Monitoring & Compliance</h3>
+              <p class="text-gray-300">Last Security Scan: <span class="text-green-400">2025-07-08 (No Threats Detected)</span></p>
+              <p class="text-gray-300">Compliance Status: <span class="text-green-400">GDPR, ISO 27001 Certified</span></p>
+              <button class="mt-4 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-300">View Security Logs</button>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md">
+              <h3 class="text-xl font-semibold mb-3 text-orange-300">Cost Management</h3>
+              <p class="text-gray-300">Current Month Usage: <span class="text-yellow-400">$125.00</span></p>
+              <p class="text-gray-300">Projected Annual Cost: <span class="text-yellow-400">$1500.00</span></p>
+              <button class="mt-4 bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition-colors duration-300">View Billing Details</button>
+            </div>
+
+            <div class="bg-gray-700 p-6 rounded-lg shadow-md md:col-span-2">
+              <h3 class="text-xl font-semibold mb-3 text-red-300">Disaster Recovery & Data Retention</h3>
+              <p class="text-gray-300">Last Recovery Drill: <span class="text-green-400">2025-06-15 (Successful)</span></p>
+              <p class="text-gray-300">Data Retention Policy: <span class="text-yellow-400">7 years for critical data</span></p>
+              <button class="mt-4 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300">Initiate Manual Backup</button>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- End Content Area -->
+    </div> <!-- End App Sections -->
+  </div> <!-- End Container -->
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-center p-4 text-gray-400 text-sm shadow-inner">
+    &copy; 2025 MyWhelp Cloud System. All rights reserved.
+    <p class="mt-2">Need help? <a href="#" class="text-blue-400 hover:underline">Visit our Support Center</a></p>
   </footer>
 
+  <!-- Report Modal (for writing reports) -->
   <div class="modal" id="reportModal">
-  <div class="modal-content">
-    <h3 id="modalTitle">Create Report</h3>
-    <p id="reportGreeting" style="margin-bottom:1rem;"></p>
-    <input type="text" id="regionInput" placeholder="Region" />
-    <input type="text" id="territoryInput" placeholder="Territory" />
-    <input type="text" id="sectionInput" placeholder="Section" />
-    <input type="date" id="reportDateInput" />
-    <textarea id="reportText" rows="6" placeholder="Write your report here..."></textarea>
-    <button onclick="saveReport()">Save Report</button>
-    <button onclick="closeReportModal()">Cancel</button>
-  </div>
-</div>
-
-
-  <div class="modal" id="messageModal">
-    <div class="modal-content">
-      <h3 id="messageModalTitle">Message</h3>
-      <p id="messageModalText"></p>
-      <div id="messageModalButtons">
-        </div>
+    <div class="modal-content bg-gray-800 text-white p-8 rounded-lg shadow-xl w-11/12 max-w-xl">
+      <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-yellow-300">Create Report</h3>
+      <p id="reportGreeting" class="text-gray-300 mb-6"></p>
+      <input type="text" id="regionInput" placeholder="Region" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+      <input type="text" id="territoryInput" placeholder="Territory" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+      <input type="text" id="sectionInput" placeholder="Section" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+      <input type="date" id="reportDateInput" class="w-full p-3 mb-4 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+      <textarea id="reportText" rows="6" placeholder="Write your report here..." class="w-full p-3 mb-6 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+      <div class="flex justify-end space-x-4">
+        <button onclick="saveReport()" class="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 transition-colors duration-300 shadow-md">Save Report</button>
+        <button onclick="closeReportModal()" class="bg-red-600 text-white font-bold py-3 px-6 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">Cancel</button>
+      </div>
     </div>
   </div>
 
+  <!-- Generic Message Modal (for simple alerts/confirmations) -->
+  <div class="modal" id="messageModal">
+    <div class="modal-content bg-gray-800 text-white p-8 rounded-lg shadow-xl w-11/12 max-w-md">
+      <h3 id="messageModalTitle" class="text-2xl font-bold mb-4 text-yellow-300">Message</h3>
+      <p id="messageModalText" class="text-gray-300 mb-6"></p>
+      <div id="messageModalButtons" class="flex justify-center space-x-4">
+        <!-- Buttons will be dynamically added here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
@@ -300,8 +365,9 @@
 
     // Initialize EmailJS with your public key.
     // IMPORTANT: Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS public key.
-    emailjs.init("YOUR_PUBLIC_KEY"); // REMEMBER TO REPLACE THIS WITH YOUR ACTUAL PUBLIC KEY
+    emailjs.init("TEn7z0_oc1iqKHPVi"); // REMEMBER TO REPLACE THIS WITH YOUR ACTUAL PUBLIC KEY
 
+    // Firebase Configuration - This is safe to expose in client-side code
     const firebaseConfig = {
       apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
       authDomain: "samrad-quiz.firebaseapp.com",
@@ -311,29 +377,39 @@
       appId: "1:853162839858:web:9eb0fde5b5a442a067d12b"
     };
 
+    // Initialize Firebase services
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const storage = getStorage(app);
 
-    let currentUser = null;
-    let reportType = '';
+    let currentUser = null; // Stores the currently logged-in user
+    let reportType = ''; // Stores the type of report being created
 
     // Get references to HTML elements
     const authSection = document.getElementById("auth-section");
+    const appSectionsContainer = document.getElementById("app-sections");
     const loginFields = document.getElementById("login-fields");
     const registerFields = document.getElementById("register-fields");
-    const uploadSection = document.getElementById("upload-section");
-    const downloadSection = document.getElementById("download-section");
-    const reportSection = document.getElementById("report-section");
-    const myReportsSection = document.getElementById("my-reports-section");
-    const logoutSection = document.getElementById("logout-section");
+
+    // Main application sections
+    const dashboardSection = document.getElementById("dashboard-section");
+    const filesSection = document.getElementById("files-section");
+    const downloadSection = document.getElementById("download-section"); // This is now part of filesSection
+    const reportSection = document.getElementById("reports-section");
+    const myReportsSection = document.getElementById("my-reports-section"); // This is now part of reportsSection
+    const collaborationSection = document.getElementById("collaboration-section");
+    const settingsSection = document.getElementById("settings-section");
+    const adminSection = document.getElementById("admin-section");
+    const logoutSection = document.getElementById("logout-section"); // This is now a button in the nav
 
     const fileList = document.getElementById("fileList");
     const reportList = document.getElementById("reportList");
     const reportModal = document.getElementById("reportModal");
     const modalTitle = document.getElementById("modalTitle");
     const reportText = document.getElementById("reportText");
-
+    const dashboardUsername = document.getElementById("dashboard-username");
+    const totalFilesSpan = document.getElementById("total-files");
+    const storageUsedSpan = document.getElementById("storage-used");
 
     // Generic Message Modal elements
     const messageModal = document.getElementById("messageModal");
@@ -356,8 +432,17 @@
         buttons.forEach(btnConfig => {
             const button = document.createElement('button');
             button.innerText = btnConfig.text;
+            // Apply Tailwind classes for modal buttons
+            button.classList.add('bg-blue-600', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded-md', 'hover:bg-blue-700', 'transition-colors', 'duration-300', 'shadow-md');
             if (btnConfig.className) {
-                button.classList.add(btnConfig.className);
+                // Specific classes for confirmation buttons
+                if (btnConfig.className === 'confirm-no') {
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    button.classList.add('bg-gray-500', 'hover:bg-gray-600');
+                } else if (btnConfig.className === 'confirm-yes') {
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    button.classList.add('bg-red-600', 'hover:bg-red-700');
+                }
             }
             button.onclick = () => {
                 closeModal(); // Close message modal first
@@ -367,7 +452,7 @@
             };
             messageModalButtons.appendChild(button);
         });
-        messageModal.style.display = "flex";
+        messageModal.style.display = "flex"; // Use flex to center with Tailwind
     }
 
     /**
@@ -378,36 +463,43 @@
     }
 
     /**
+     * Shows a specific main application section and hides others.
+     * @param {string} sectionId - The ID of the section to show.
+     */
+    window.showSection = function(sectionId) {
+        document.querySelectorAll('.main-app-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        document.getElementById(sectionId).classList.remove('hidden');
+    };
+
+    /**
      * Shows the main application sections and hides the authentication section.
      * Also triggers loading of files and reports for the current user.
      */
-    function showSections() {
+    function showApp() {
       authSection.classList.add("hidden");
-      uploadSection.classList.remove("hidden");
-      downloadSection.classList.remove("hidden");
-      reportSection.classList.remove("hidden");
-      myReportsSection.classList.remove("hidden");
-      logoutSection.classList.remove("hidden"); // Show logout button
-
+      appSectionsContainer.classList.remove("hidden");
+      dashboardUsername.innerText = currentUser.displayName || currentUser.email;
+      showSection('dashboard-section'); // Show dashboard by default after login
       loadFiles();
       loadReports();
     }
 
     /**
      * Hides the main application sections and shows the authentication section.
-     * Clears user-specific data.
+     * Clears user-specific data and input fields.
      */
-    function hideSections() {
+    function hideApp() {
         authSection.classList.remove("hidden");
-        uploadSection.classList.add("hidden");
-        downloadSection.classList.add("hidden");
-        reportSection.classList.add("hidden");
-        myReportsSection.classList.add("hidden");
-        logoutSection.classList.add("hidden"); // Hide logout button
+        appSectionsContainer.classList.add("hidden");
 
         // Clear content when logged out
         fileList.innerHTML = '';
         reportList.innerHTML = '';
+        totalFilesSpan.innerText = '0';
+        storageUsedSpan.innerText = '0 MB';
+
         // Clear input fields for both login and register forms
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
@@ -440,8 +532,8 @@
      * Handles user login with email and password.
      */
     window.login = function () {
-        const email = document.getElementById("loginEmail").value; // Corrected ID
-        const password = document.getElementById("loginPassword").value; // Corrected ID
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
 
         if (!email || !password) {
             showMessageModal("Login Error", "Please enter both email and password.");
@@ -452,20 +544,19 @@
             .then(({ user }) => {
                 currentUser = user;
                 showMessageModal("Login Success", "You have successfully logged in!");
-                showSections();
+                showApp();
             })
             .catch(err => {
                 showMessageModal("Login Failed", "Error: " + err.message);
             });
     };
 
-
     /**
-     * Handles user registration with email and password, then sends a verification email.
+     * Handles user registration with email and password, then allows setting full name.
      */
     window.register = function () {
-        const email = document.getElementById("registerEmail").value; // Corrected ID
-        const password = document.getElementById("registerPassword").value; // Corrected ID
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
 
         if (!email || !password || !confirmPassword) {
@@ -486,13 +577,12 @@
                 }
                 currentUser = user;
                 showMessageModal("Registration Successful", "Your account has been created and you are now logged in.");
-                showSections();
+                showApp();
             })
             .catch(err => {
                 showMessageModal("Registration Failed", "Error: " + err.message);
             });
     };
-
 
     /**
      * Uploads a selected file to Firebase Storage.
@@ -518,8 +608,8 @@
             "Upload Successful!",
             "Your file has been uploaded successfully.",
             [
-              { text: 'Go to Main Menu', onClick: () => showSections() },
-              { text: 'Upload Another File', onClick: () => {} } // Do nothing, message modal closes, file input is clear
+              { text: 'Go to Files', onClick: () => showSection('files-section') },
+              { text: 'Upload Another File', onClick: () => {} }
             ]
           );
         })
@@ -528,40 +618,79 @@
 
     /**
      * Loads and displays the current user's uploaded files from Firebase Storage.
+     * Also updates storage usage statistics.
      */
     function loadFiles() {
       if (!currentUser) {
-        fileList.innerHTML = "<li>Please log in to see your files.</li>";
+        fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Please log in to see your files.</li>";
+        totalFilesSpan.innerText = '0';
+        storageUsedSpan.innerText = '0 MB';
         return;
       }
 
       const userFilesRef = ref(storage, `uploads/${currentUser.uid}/`);
-      fileList.innerHTML = "<li>Loading files...</li>";
+      fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Loading files...</li>";
+      let totalSize = 0;
+      let fileCount = 0;
 
       listAll(userFilesRef)
         .then(res => {
           fileList.innerHTML = ""; // Clear "Loading..."
           if (res.items.length === 0) {
-            fileList.innerHTML = "<li>No files uploaded yet.</li>";
+            fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>No files uploaded yet.</li>";
+            totalFilesSpan.innerText = '0';
+            storageUsedSpan.innerText = '0 MB';
             return;
           }
 
           res.items.forEach(itemRef => {
             getDownloadURL(itemRef).then(url => {
-              const li = document.createElement("li");
-              li.innerHTML = `
-                <a href="${url}" target="_blank">${itemRef.name}</a>
-                <button onclick="deleteFile('${itemRef.fullPath}')">Delete</button>
-              `;
-              fileList.appendChild(li);
+              // Get file metadata to calculate size
+              itemRef.getMetadata().then(metadata => {
+                totalSize += metadata.size;
+                fileCount++;
+
+                const li = document.createElement("li");
+                li.className = "bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap";
+                li.innerHTML = `
+                  <a href="${url}" target="_blank" class="text-blue-400 hover:underline flex-grow mr-4 break-all">${itemRef.name}</a>
+                  <div class="flex space-x-2 mt-2 md:mt-0">
+                    <button onclick="viewFileHistory('${itemRef.fullPath}')" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-300 text-sm">History</button>
+                    <button onclick="shareFile('${itemRef.name}')" class="bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors duration-300 text-sm">Share</button>
+                    <button onclick="deleteFile('${itemRef.fullPath}')" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 text-sm">Delete</button>
+                  </div>
+                `;
+                fileList.appendChild(li);
+
+                totalFilesSpan.innerText = fileCount;
+                storageUsedSpan.innerText = (totalSize / (1024 * 1024)).toFixed(2) + ' MB'; // Convert bytes to MB
+              }).catch(err => console.error("Error getting file metadata:", err));
             });
           });
         })
         .catch(err => {
           console.error("Failed to list files:", err);
-          fileList.innerHTML = "<li>Error loading files.</li>";
+          fileList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Error loading files.</li>";
+          totalFilesSpan.innerText = '0';
+          storageUsedSpan.innerText = '0 MB';
         });
     }
+
+    /**
+     * Simulates viewing file history (version control).
+     * @param {string} fullPath - The full path of the file.
+     */
+    window.viewFileHistory = function(fullPath) {
+        showMessageModal("File History", `Displaying version history for: ${fullPath.split('/').pop()}\n\n(Feature under development: This would show a list of previous versions and allow restoration.)`);
+    };
+
+    /**
+     * Simulates sharing a file.
+     * @param {string} fileName - The name of the file to share.
+     */
+    window.shareFile = function(fileName) {
+        showMessageModal("Share File", `Sharing "${fileName}" with other users.\n\n(Feature under development: This would open a detailed sharing interface with access controls.)`);
+    };
 
     /**
      * Deletes a file from Firebase Storage.
@@ -608,8 +737,6 @@
 
         reportModal.style.display = "flex";
     };
-
-
 
     /**
      * Closes the report creation modal.
@@ -669,7 +796,7 @@ ${content}
 
                 setTimeout(() => {
                     showMessageModal("Next Action", "Choose what to do next:", [
-                        { text: "Go to Main Menu", onClick: showSections },
+                        { text: "Go to My Reports", onClick: () => showSection('reports-section') },
                         { text: "Write Another Report", onClick: () => openReportModal(reportType) }
                     ]);
                 }, 5000);
@@ -684,27 +811,30 @@ ${content}
      */
     function loadReports() {
       if (!currentUser) {
-        reportList.innerHTML = "<li>Please log in to see your reports.</li>";
+        reportList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Please log in to see your reports.</li>";
         return;
       }
 
       const userReportRef = ref(storage, `reports/${currentUser.uid}/`);
-      reportList.innerHTML = "<li>Loading reports...</li>";
+      reportList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Loading reports...</li>";
 
       listAll(userReportRef)
         .then(res => {
           reportList.innerHTML = ""; // Clear "Loading..."
           if (res.items.length === 0) {
-            reportList.innerHTML = "<li>No reports saved yet.</li>";
+            reportList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>No reports saved yet.</li>";
             return;
           }
 
           res.items.forEach(itemRef => {
             getDownloadURL(itemRef).then(url => {
               const li = document.createElement("li");
+              li.className = "bg-gray-700 p-4 rounded-md flex items-center justify-between flex-wrap";
               li.innerHTML = `
-                <a href="${url}" target="_blank">${itemRef.name}</a>
-                <button onclick="deleteReport('${itemRef.fullPath}')">Delete</button>
+                <a href="${url}" target="_blank" class="text-blue-400 hover:underline flex-grow mr-4 break-all">${itemRef.name}</a>
+                <div class="flex space-x-2 mt-2 md:mt-0">
+                    <button onclick="deleteReport('${itemRef.fullPath}')" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 text-sm">Delete</button>
+                </div>
               `;
               reportList.appendChild(li);
             });
@@ -712,7 +842,7 @@ ${content}
         })
         .catch(err => {
           console.error("Failed to list reports:", err);
-          reportList.innerHTML = "<li>Error loading reports.</li>";
+          reportList.innerHTML = "<li class='bg-gray-700 p-4 rounded-md text-gray-300'>Error loading reports.</li>";
         });
     }
 
@@ -755,7 +885,7 @@ ${content}
                     signOut(auth).then(() => {
                         currentUser = null;
                         showMessageModal("Logged Out", "You have been successfully logged out.");
-                        hideSections();
+                        hideApp(); // Use hideApp to reset UI
                     }).catch((error) => {
                         showMessageModal("Logout Error", "Error logging out: " + error.message);
                         console.error("Logout error:", error);
@@ -769,12 +899,34 @@ ${content}
     onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
-        showSections();
+        showApp(); // Show the main application if logged in
       } else {
         currentUser = null;
-        hideSections();
+        hideApp(); // Hide application and show auth section if logged out
       }
     });
+
+    // Initial check for offline status (simulated)
+    window.addEventListener('load', () => {
+        if (!navigator.onLine) {
+            showMessageModal("Offline Mode", "You are currently offline. Some features may be limited. Changes will sync when online.");
+        }
+    });
+
+    // Simulate search functionality (for files)
+    document.getElementById('fileSearchInput').addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        const items = fileList.getElementsByTagName('li');
+        for (let i = 0; i < items.length; i++) {
+            const fileName = items[i].querySelector('a')?.innerText.toLowerCase() || '';
+            if (fileName.includes(searchTerm) || searchTerm === '') {
+                items[i].classList.remove('hidden');
+            } else {
+                items[i].classList.add('hidden');
+            }
+        }
+    });
+
   </script>
 </body>
 </html>
