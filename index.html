@@ -67,9 +67,9 @@
       display: none;
     }
 
-    /* Specific styles for auth fields */
+    /* Specific styles for auth fields - hidden by default */
     .auth-fields {
-      display: none; /* Hidden by default */
+      display: none;
     }
 
     /* General Modal Styling */
@@ -219,8 +219,8 @@
         <button onclick="register()">Create Account</button>
       </div>
 
-      <button onclick="showLogin()">Login</button>
-      <button onclick="showRegister()">Create Account</button>
+      <button onclick="showLoginFields()">Login</button>
+      <button onclick="showRegisterFields()">Create Account</button>
     </div>
 
     <div class="section hidden" id="upload-section">
@@ -421,7 +421,7 @@
     /**
      * Shows the login fields and hides register fields.
      */
-    window.showLogin = function() {
+    window.showLoginFields = function() {
         loginFields.classList.remove("hidden");
         registerFields.classList.add("hidden");
     };
@@ -429,7 +429,7 @@
     /**
      * Shows the register fields and hides login fields.
      */
-    window.showRegister = function() {
+    window.showRegisterFields = function() {
         registerFields.classList.remove("hidden");
         loginFields.classList.add("hidden");
     };
