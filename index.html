@@ -67,6 +67,11 @@
       display: none;
     }
 
+    /* Specific styles for auth fields */
+    .auth-fields {
+      display: none; /* Hidden by default */
+    }
+
     /* General Modal Styling */
     .modal {
       display: none;
@@ -195,20 +200,29 @@
   </header>
 
   <div class="container">
-    <!-- Initial view: Login/Register -->
     <div class="section" id="auth-section">
-      <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+      <h2>Welcome to MyWhelp Cloud System!</h2>
+      <p>MyWhelp is your secure and convenient cloud platform designed to simplify your digital life. Easily **upload and manage your important files**, **create and store detailed reports**, and access your data anytime, anywhere. Experience seamless organization and reliable storage with MyWhelp.</p>
 
-      <h2>Login / Create Account</h2>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+      <div id="login-fields" class="auth-fields">
+        <h3>Login to your account</h3>
+        <input type="email" id="loginEmail" placeholder="Email" />
+        <input type="password" id="loginPassword" placeholder="Password" />
+        <button onclick="login()">Login</button>
+      </div>
 
-      <button onclick="login()">Login</button>
-      <button onclick="register()">Create Account</button>
+      <div id="register-fields" class="auth-fields">
+        <h3>Create a new account</h3>
+        <input type="email" id="registerEmail" placeholder="Email" />
+        <input type="password" id="registerPassword" placeholder="Password" />
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+        <button onclick="register()">Create Account</button>
+      </div>
+
+      <button onclick="showLogin()">Login</button>
+      <button onclick="showRegister()">Create Account</button>
     </div>
 
-    <!-- Main application sections (hidden until logged in) -->
     <div class="section hidden" id="upload-section">
       <h2>Upload File</h2>
       <input type="file" id="fileInput" />
@@ -241,8 +255,7 @@
     &copy; 2025 MyWhelp Cloud System
   </footer>
 
-  <!-- Report Modal (for writing reports) -->
-<div class="modal" id="reportModal">
+  <div class="modal" id="reportModal">
   <div class="modal-content">
     <h3 id="modalTitle">Create Report</h3>
     <p id="reportGreeting" style="margin-bottom:1rem;"></p>
@@ -257,18 +270,15 @@
 </div>
 
 
-  <!-- Generic Message Modal (for simple alerts/confirmations) -->
   <div class="modal" id="messageModal">
     <div class="modal-content">
       <h3 id="messageModalTitle">Message</h3>
       <p id="messageModalText"></p>
       <div id="messageModalButtons">
-        <!-- Buttons will be dynamically added here -->
-      </div>
+        </div>
     </div>
   </div>
 
-  <!-- Firebase + App Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
@@ -276,7 +286,8 @@
       signInWithEmailAndPassword,
       createUserWithEmailAndPassword,
       onAuthStateChanged,
-      signOut
+      signOut,
+      updateProfile
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
       getStorage,
@@ -309,6 +320,8 @@
 
     // Get references to HTML elements
     const authSection = document.getElementById("auth-section");
+    const loginFields = document.getElementById("login-fields");
+    const registerFields = document.getElementById("register-fields");
     const uploadSection = document.getElementById("upload-section");
     const downloadSection = document.getElementById("download-section");
     const reportSection = document.getElementById("report-section");
@@ -317,7 +330,7 @@
 
     const fileList = document.getElementById("fileList");
     const reportList = document.getElementById("reportList");
-    const reportModal = document.getElementById("reportModal"); // Renamed from 'modal' to avoid conflict
+    const reportModal = document.getElementById("reportModal");
     const modalTitle = document.getElementById("modalTitle");
     const reportText = document.getElementById("reportText");
 
@@ -395,71 +408,88 @@
         // Clear content when logged out
         fileList.innerHTML = '';
         reportList.innerHTML = '';
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('registerEmail').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+
+        loginFields.classList.add("hidden");
+        registerFields.classList.add("hidden");
     }
+
+    /**
+     * Shows the login fields and hides register fields.
+     */
+    window.showLogin = function() {
+        loginFields.classList.remove("hidden");
+        registerFields.classList.add("hidden");
+    };
+
+    /**
+     * Shows the register fields and hides login fields.
+     */
+    window.showRegister = function() {
+        registerFields.classList.remove("hidden");
+        loginFields.classList.add("hidden");
+    };
 
     /**
      * Handles user login with email and password.
      */
-   window.login = function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+    window.login = function () {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
 
-  if (!email || !password) {
-    showMessageModal("Login Error", "Please enter both email and password.");
-    return;
-  }
+        if (!email || !password) {
+            showMessageModal("Login Error", "Please enter both email and password.");
+            return;
+        }
 
-  console.log("Attempting login with:", email); // ✅ Add this
-
-  signInWithEmailAndPassword(auth, email, password)
-    .then(({ user }) => {
-      console.log("Login successful", user); // ✅ Add this
-      currentUser = user;
-      showMessageModal("Login Success", "You have successfully logged in!");
-      showSections();
-    })
-    .catch(err => {
-      console.error("Login failed:", err); // ✅ Add this
-      showMessageModal("Login Failed", "Error: " + err.message);
-    });
-};
+        signInWithEmailAndPassword(auth, email, password)
+            .then(({ user }) => {
+                currentUser = user;
+                showMessageModal("Login Success", "You have successfully logged in!");
+                showSections();
+            })
+            .catch(err => {
+                showMessageModal("Login Failed", "Error: " + err.message);
+            });
+    };
 
 
     /**
      * Handles user registration with email and password, then sends a verification email.
      */
-   window.register = function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+    window.register = function () {
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
 
-  if (!email || !password) {
-    showMessageModal("Registration Error", "Please enter both email and password.");
-    return;
-  }
+        if (!email || !password || !confirmPassword) {
+            showMessageModal("Registration Error", "Please fill in all fields.");
+            return;
+        }
 
-  console.log("Attempting registration with:", email); // ✅ Add this
+        if (password !== confirmPassword) {
+            showMessageModal("Registration Error", "Passwords do not match.");
+            return;
+        }
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then(async ({ user }) => {
-      console.log("Registration successful", user); // ✅ Add this
-
-      const fullName = prompt("Enter your full name:");
-      if (fullName) {
-        const { updateProfile } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-        await updateProfile(user, { displayName: fullName });
-      }
-
-      currentUser = user;
-      showMessageModal("Registration Successful", "Your account has been created and you are now logged in.");
-      showSections();
-    })
-    .catch(err => {
-      console.error("Registration failed:", err); // ✅ Add this
-      showMessageModal("Registration Failed", "Error: " + err.message);
-    });
-};
+        createUserWithEmailAndPassword(auth, email, password)
+            .then(async ({ user }) => {
+                const fullName = prompt("Enter your full name (optional):");
+                if (fullName) {
+                    await updateProfile(user, { displayName: fullName });
+                }
+                currentUser = user;
+                showMessageModal("Registration Successful", "Your account has been created and you are now logged in.");
+                showSections();
+            })
+            .catch(err => {
+                showMessageModal("Registration Failed", "Error: " + err.message);
+            });
+    };
 
 
     /**
@@ -562,20 +592,20 @@
      * @param {string} type The type of report (e.g., 'weekly', 'monthly', 'yearly').
      */
     window.openReportModal = function(type) {
-  reportType = type;
-  modalTitle.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
+        reportType = type;
+        modalTitle.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
 
-  reportText.value = "";
-  document.getElementById("regionInput").value = "";
-  document.getElementById("territoryInput").value = "";
-  document.getElementById("sectionInput").value = "";
-  document.getElementById("reportDateInput").value = "";
+        reportText.value = "";
+        document.getElementById("regionInput").value = "";
+        document.getElementById("territoryInput").value = "";
+        document.getElementById("sectionInput").value = "";
+        document.getElementById("reportDateInput").value = "";
 
-  const name = currentUser.displayName || currentUser.email;
-  document.getElementById("reportGreeting").innerText = `Greetings brethren ${name}`;
+        const name = currentUser.displayName || currentUser.email;
+        document.getElementById("reportGreeting").innerText = `Greetings brethren ${name}`;
 
-  reportModal.style.display = "flex";
-};
+        reportModal.style.display = "flex";
+    };
 
 
 
@@ -589,25 +619,25 @@
     /**
      * Saves the created report to Firebase Storage.
      */
-   window.saveReport = function () {
-  if (!currentUser) {
-    showMessageModal("Save Error", "You must be logged in to save reports.");
-    return;
-  }
+    window.saveReport = function () {
+        if (!currentUser) {
+            showMessageModal("Save Error", "You must be logged in to save reports.");
+            return;
+        }
 
-  const region = document.getElementById("regionInput").value.trim();
-  const territory = document.getElementById("territoryInput").value.trim();
-  const section = document.getElementById("sectionInput").value.trim();
-  const date = document.getElementById("reportDateInput").value;
-  const content = document.getElementById("reportText").value.trim();
+        const region = document.getElementById("regionInput").value.trim();
+        const territory = document.getElementById("territoryInput").value.trim();
+        const section = document.getElementById("sectionInput").value.trim();
+        const date = document.getElementById("reportDateInput").value;
+        const content = document.getElementById("reportText").value.trim();
 
-  if (!region || !territory || !section || !date || !content) {
-    showMessageModal("Missing Info", "Please fill in all fields.");
-    return;
-  }
+        if (!region || !territory || !section || !date || !content) {
+            showMessageModal("Missing Info", "Please fill in all fields.");
+            return;
+        }
 
-  const name = currentUser.displayName || currentUser.email;
-  const fullContent = `
+        const name = currentUser.displayName || currentUser.email;
+        const fullContent = `
 Greetings brethren ${name}
 Region: ${region}
 Territory: ${territory}
@@ -616,66 +646,36 @@ Date of Report: ${date}
 
 Report Details:
 ${content}
-  `.trim();
+        `.trim();
 
-  const now = new Date();
-  const dateString = now.toISOString().replace(/[:.]/g, '-');
-  const fileName = `${reportType}_report_${dateString}.txt`;
-  const blob = new Blob([fullContent], { type: "text/plain" });
-  const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
+        const now = new Date();
+        const dateString = now.toISOString().replace(/[:.]/g, '-');
+        const fileName = `${reportType}_report_${dateString}.txt`;
+        const blob = new Blob([fullContent], { type: "text/plain" });
+        const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
 
-  uploadBytes(reportRef, blob)
-    .then(() => {
-      reportModal.style.display = "none"; // Hide report modal immediately
-      loadReports(); // Refresh list
+        uploadBytes(reportRef, blob)
+            .then(() => {
+                reportModal.style.display = "none"; // Hide report modal immediately
+                loadReports(); // Refresh list
 
-      // Show 5-second countdown message
-      messageModalTitle.innerText = "Report Saved!";
-      messageModalText.innerText = "Your report has been saved successfully. Closing in 5 seconds...";
-      messageModalButtons.innerHTML = "";
-      messageModal.style.display = "flex";
+                // Show 5-second countdown message
+                messageModalTitle.innerText = "Report Saved!";
+                messageModalText.innerText = "Your report has been saved successfully. Closing in 5 seconds...";
+                messageModalButtons.innerHTML = "";
+                messageModal.style.display = "flex";
 
-      setTimeout(() => {
-        showMessageModal("Next Action", "Choose what to do next:", [
-          { text: "Go to Main Menu", onClick: showSections },
-          { text: "Write Another Report", onClick: () => openReportModal(reportType) }
-        ]);
-      }, 5000);
-    })
-    .catch(err => {
-      showMessageModal("Save Failed", "Error: " + err.message);
-    });
-};
-
-
-  const fullContent = `
-Greetings brethren ${currentUser.email}
-Region: ${region}
-Territory: ${territory}
-Section: ${section}
-Date of Report: ${date}
-
-Report Details:
-${content}
-  `.trim();
-
-  const now = new Date();
-  const dateString = now.toISOString().replace(/[:.]/g, '-');
-  const fileName = `${reportType}_report_${dateString}.txt`;
-  const blob = new Blob([fullContent], { type: "text/plain" });
-
-  const reportRef = ref(storage, `reports/${currentUser.uid}/${fileName}`);
-  uploadBytes(reportRef, blob)
-    .then(() => {
-      reportModal.style.display = "none";
-      loadReports();
-      showMessageModal("Report Saved!", "Your report has been saved successfully.", [
-        { text: "Go to Main Menu", onClick: showSections },
-        { text: "Write Another Report", onClick: () => openReportModal(reportType) }
-      ]);
-    })
-    .catch(err => showMessageModal("Save Failed", "Error: " + err.message));
-};
+                setTimeout(() => {
+                    showMessageModal("Next Action", "Choose what to do next:", [
+                        { text: "Go to Main Menu", onClick: showSections },
+                        { text: "Write Another Report", onClick: () => openReportModal(reportType) }
+                    ]);
+                }, 5000);
+            })
+            .catch(err => {
+                showMessageModal("Save Failed", "Error: " + err.message);
+            });
+    };
 
     /**
      * Loads and displays the current user's saved reports from Firebase Storage.
