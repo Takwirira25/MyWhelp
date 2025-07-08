@@ -418,49 +418,50 @@
     const messageModalButtons = document.getElementById("messageModalButtons");
 
     /**
-     * Displays a generic message modal with custom buttons.
-     * @param {string} title - The title of the modal.
-     * @param {string} message - The message to display.
-     * @param {Array<Object>} buttons - An array of button configurations:
-     * [{ text: 'Button Text', className: 'optional-class', onClick: function }]
-     */
-    function showMessageModal(title, message, buttons = [{ text: 'OK', onClick: closeModal }]) {
-        messageModalTitle.innerText = title;
-        messageModalText.innerText = message;
-        messageModalButtons.innerHTML = ''; // Clear previous buttons
+     /**
+ * Displays a generic message modal with custom buttons.
+ * @param {string} title - The title of the modal.
+ * @param {string} message - The message to display.
+ * @param {Array<Object>} buttons - An array of button configurations:
+ * [{ text: 'Button Text', className: 'optional-class', onClick: function }]
+ */
+function showMessageModal(title, message, buttons = [{ text: 'OK', onClick: closeModal }]) {
+    messageModalTitle.innerText = title;
+    messageModalText.innerText = message;
+    messageModalButtons.innerHTML = ''; // Clear previous buttons
 
-        buttons.forEach(btnConfig => {
-            const button = document.createElement('button');
-            button.innerText = btnConfig.text;
-            // Apply Tailwind classes for modal buttons
-            button.classList.add('bg-blue-600', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded-md', 'hover:bg-blue-700', 'transition-colors', 'duration-300', 'shadow-md');
-            if (btnConfig.className) {
-                // Specific classes for confirmation buttons
-                if (btnConfig.className === 'confirm-no') {
-                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    button.classList.add('bg-gray-500', 'hover:bg-gray-600');
-                } else if (btnConfig.className === 'confirm-yes') {
-                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    button.classList.add('bg-red-600', 'hover:bg-red-700');
-                }
+    buttons.forEach(btnConfig => {
+        const button = document.createElement('button');
+        button.innerText = btnConfig.text;
+        // Apply Tailwind classes for modal buttons
+        button.classList.add('bg-blue-600', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded-md', 'hover:bg-blue-700', 'transition-colors', 'duration-300', 'shadow-md');
+        if (btnConfig.className) {
+            // Specific classes for confirmation buttons
+            if (btnConfig.className === 'confirm-no') {
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            } else if (btnConfig.className === 'confirm-yes') {
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
             }
-            button.onclick = () => {
-                closeModal(); // Close message modal first
-                if (btnConfig.onClick) {
-                    btnConfig.onClick();
-                }
-            };
-            messageModalButtons.appendChild(button);
-        });
-        messageModal.style.display = "flex"; // Use flex to center with Tailwind
-    }
+        }
+        button.onclick = () => {
+            closeModal(); // Close message modal first
+            if (btnConfig.onClick) {
+                btnConfig.onClick();
+            }
+        };
+        messageModalButtons.appendChild(button);
+    });
+    messageModal.style.display = "flex"; // Use flex to center with Tailwind
+}
 
-    /**
-     * Closes the generic message modal.
-     */
-    function closeModal() {
-        messageModal.style.display = "none";
-    }
+/**
+ * Closes the generic message modal.
+ */
+function closeModal() {
+    messageModal.style.display = "none";
+}
 
     /**
      * Shows a specific main application section and hides others.
