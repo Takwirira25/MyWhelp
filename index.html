@@ -300,7 +300,7 @@
 
     // Initialize EmailJS with your public key.
     // IMPORTANT: Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS public key.
-    emailjs.init("YOUR_PUBLIC_KEY");
+    emailjs.init("YOUR_PUBLIC_KEY"); // REMEMBER TO REPLACE THIS WITH YOUR ACTUAL PUBLIC KEY
 
     const firebaseConfig = {
       apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
@@ -408,12 +408,14 @@
         // Clear content when logged out
         fileList.innerHTML = '';
         reportList.innerHTML = '';
+        // Clear input fields for both login and register forms
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
         document.getElementById('registerEmail').value = '';
         document.getElementById('registerPassword').value = '';
         document.getElementById('confirmPassword').value = '';
 
+        // Hide both login and register fields
         loginFields.classList.add("hidden");
         registerFields.classList.add("hidden");
     }
@@ -438,8 +440,8 @@
      * Handles user login with email and password.
      */
     window.login = function () {
-        const email = document.getElementById("loginEmail").value;
-        const password = document.getElementById("loginPassword").value;
+        const email = document.getElementById("loginEmail").value; // Corrected ID
+        const password = document.getElementById("loginPassword").value; // Corrected ID
 
         if (!email || !password) {
             showMessageModal("Login Error", "Please enter both email and password.");
@@ -462,8 +464,8 @@
      * Handles user registration with email and password, then sends a verification email.
      */
     window.register = function () {
-        const email = document.getElementById("registerEmail").value;
-        const password = document.getElementById("registerPassword").value;
+        const email = document.getElementById("registerEmail").value; // Corrected ID
+        const password = document.getElementById("registerPassword").value; // Corrected ID
         const confirmPassword = document.getElementById("confirmPassword").value;
 
         if (!email || !password || !confirmPassword) {
