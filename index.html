@@ -456,6 +456,7 @@
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        // Ensure you're selecting the input elements within the current row's cells
         const idInput = row.cells[0].querySelector("input");
         const nameInput = row.cells[1].querySelector("input");
         const statusSelect = row.cells[2].querySelector("select");
