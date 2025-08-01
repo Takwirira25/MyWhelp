@@ -217,19 +217,27 @@
       transform: translateX(5px);
     }
 
-    .status-badge {
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-weight: 600;
-      color: white;
-      display: inline-block;
-      min-width: 80px;
-      text-align: center;
+    /* Styles for the status dropdowns in attendance table */
+    .attendance-status-select {
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        color: white;
+        background-color: transparent; /* Start with transparent background */
+        border: 1px solid rgba(255,255,255,0.3);
+        appearance: none; /* Remove default arrow on some browsers */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 0.8rem 0.8rem;
     }
 
-    .status-present { background-color: #28a745; }
-    .status-absent { background-color: #dc3545; }
-    .status-late { background-color: #ffc107; color: #333; }
+    .attendance-status-select.status-present { background-color: #28a745; border-color: #28a745; }
+    .attendance-status-select.status-absent { background-color: #dc3545; border-color: #dc3545; }
+    .attendance-status-select.status-late { background-color: #ffc107; color: #333; border-color: #ffc107; }
+
 
     textarea.form-control {
       min-height: 200px;
@@ -412,24 +420,28 @@
       const table = document.getElementById("attendanceTable");
       const row = table.insertRow();
       row.innerHTML = `
-        <td><input class="form-control form-control-sm" placeholder="MW ID"></td>
-        <td><input class="form-control form-control-sm" placeholder="Name"></td>
+        <td><input type="text" class="form-control form-control-sm" placeholder="MW ID"></td>
+        <td><input type="text" class="form-control form-control-sm" placeholder="Name"></td>
         <td>
-          <select class="form-select form-select-sm">
-            <option value="Present" class="status-present">Present</option>
-            <option value="Absent" class="status-absent">Absent</option>
-            <option value="Late" class="status-late">Late</option>
+          <select class="form-select form-select-sm attendance-status-select">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Late">Late</option>
           </select>
         </td>
         <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-trash-alt"></i></button></td>
       `;
       // Apply correct status class to newly added select element for visual consistency
       const selectElement = row.cells[2].querySelector("select");
+      // Set initial class based on default 'Present' option
+      selectElement.classList.add(`status-present`);
+
       selectElement.addEventListener('change', function() {
-        this.className = `form-select form-select-sm status-${this.value.toLowerCase()}`;
+        // Remove previous status classes
+        this.classList.remove('status-present', 'status-absent', 'status-late');
+        // Add new status class based on selected value
+        this.classList.add(`status-${this.value.toLowerCase()}`);
       });
-      // Initial class setting
-      selectElement.className = `form-select form-select-sm status-${selectElement.value.toLowerCase()}`;
     };
 
     window.saveAttendance = async () => {
@@ -442,7 +454,8 @@
       const rows = document.querySelectorAll("#attendanceTable tr");
       const attendanceRecords = [];
 
-      for (let row of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         const idInput = row.cells[0].querySelector("input");
         const nameInput = row.cells[1].querySelector("input");
         const statusSelect = row.cells[2].querySelector("select");
@@ -452,7 +465,7 @@
         const status = statusSelect.value;
 
         if (!id || !name) {
-          alert("Please fill in all ID and Name fields for attendance records.");
+          alert(`Please fill in both ID and Name for row ${i + 1} of attendance records.`);
           return; // Stop if any row is incomplete
         }
         attendanceRecords.push({ date, id, name, status, takenBy: currentUser.id });
@@ -492,8 +505,8 @@
 
         alert("Report saved successfully!");
         document.getElementById("reportText").value = "";
-        loadReports();
-        loadVisibleReports();
+        loadReports(); // Reload my reports
+        loadVisibleReports(); // Reload visible reports
       } catch (error) {
         console.error("Error saving report:", error);
         alert("Failed to save report. Please try again.");
@@ -620,8 +633,11 @@
 
     // Event listener for attendance status changes to update styling
     document.getElementById('attendanceTable').addEventListener('change', function(event) {
-      if (event.target.tagName === 'SELECT' && event.target.closest('tr')) {
-        event.target.className = `form-select form-select-sm status-${event.target.value.toLowerCase()}`;
+      if (event.target.classList.contains('attendance-status-select')) {
+        // Remove existing status classes
+        event.target.classList.remove('status-present', 'status-absent', 'status-late');
+        // Add the new status class based on the selected value
+        event.target.classList.add(`status-${event.target.value.toLowerCase()}`);
       }
     });
 
