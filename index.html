@@ -250,29 +250,72 @@
         color: white;
         border-radius: 10px 0 0 10px;
     }
+
+    .spinner-border {
+        color: white;
+    }
   </style>
 </head>
 <body>
   <div class="container my-5">
     <div id="login-card" class="card mx-auto" style="max-width: 450px;">
       <h2 class="text-center mb-4">Welcome to <span style="font-weight: 700;">MyWhelp</span></h2>
-      <div class="input-group mb-3">
-        <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-        <input type="text" id="userID" placeholder="Enter Your MW ID (e.g. MW01)" class="form-control">
+      <p id="login-intro-text" class="text-center text-muted mb-4">Are you a new or returning user?</p>
+
+      <!-- Initial buttons for user type selection -->
+      <div id="user-type-selection" class="d-flex flex-column gap-3">
+        <button class="btn btn-primary w-100" onclick="showReturningUserForm()">
+          <i class="fas fa-sign-in-alt me-2"></i>I'm a Returning User
+        </button>
+        <button class="btn btn-primary w-100" onclick="showNewUserForm()">
+          <i class="fas fa-user-plus me-2"></i>I'm a New User
+        </button>
       </div>
-      <div class="input-group mb-4">
-        <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-        <select id="userRole" class="form-select">
-          <option value="Early Youth">Early Youth</option>
-          <option value="Early Youth Instructor">Early Youth Instructor</option>
-          <option value="Early Youth Advisor">Early Youth Advisor</option>
-          <option value="TC">Territorial Coordinator (TC)</option>
-          <option value="RC">Regional Coordinator (RC)</option>
-        </select>
+
+      <!-- Login form - initially hidden -->
+      <div id="returning-user-form" class="hidden">
+        <p class="text-center text-muted mb-4">Please enter your ID to log in.</p>
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+          <input type="text" id="userIDInput" placeholder="Enter your User ID (e.g., MW01)" class="form-control">
+        </div>
+        <button id="login-button" class="btn btn-primary w-100" onclick="loginUser()">
+          <i class="fas fa-sign-in-alt me-2"></i>Login
+        </button>
+        <button class="btn btn-secondary w-100 mt-2" onclick="goBackToSelection()">
+          <i class="fas fa-arrow-left me-2"></i>Back
+        </button>
       </div>
-      <button class="btn btn-primary w-100" onclick="login()">
-        <i class="fas fa-sign-in-alt me-2"></i>Login
-      </button>
+
+      <!-- Registration form - initially hidden -->
+      <div id="new-user-form" class="hidden">
+        <p class="text-center text-muted mb-4">Please create your user profile.</p>
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="fas fa-user"></i></span>
+          <input type="text" id="firstName" placeholder="First Name" class="form-control">
+        </div>
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="fas fa-user"></i></span>
+          <input type="text" id="lastName" placeholder="Last Name" class="form-control">
+        </div>
+        <div class="input-group mb-4">
+          <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+          <select id="userRole" class="form-select">
+            <option value="Early Youth">Early Youth</option>
+            <option value="Early Youth Instructor">Early Youth Instructor</option>
+            <option value="Early Youth Advisor">Early Youth Advisor</option>
+            <option value="TC">Territorial Coordinator (TC)</option>
+            <option value="RC">Regional Coordinator (RC)</option>
+          </select>
+        </div>
+        <button id="register-button" class="btn btn-primary w-100" onclick="registerUser()">
+          <i class="fas fa-user-plus me-2"></i>Register
+        </button>
+        <button class="btn btn-secondary w-100 mt-2" onclick="goBackToSelection()">
+          <i class="fas fa-arrow-left me-2"></i>Back
+        </button>
+      </div>
+      
     </div>
 
     <div id="main-content" class="hidden">
@@ -288,6 +331,11 @@
           <a class="nav-link active" id="attendance-tab" data-bs-toggle="tab" href="#attendance" role="tab" aria-controls="attendance" aria-selected="true">
             <i class="fas fa-clipboard-check me-2"></i>Attendance
           </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="myAttendance-tab" data-bs-toggle="tab" href="#myAttendance" role="tab" aria-controls="myAttendance" aria-selected="false">
+                <i class="fas fa-history me-2"></i>My Attendance
+            </a>
         </li>
         <li class="nav-item" role="presentation">
           <a class="nav-link" id="reporting-tab" data-bs-toggle="tab" href="#reporting" role="tab" aria-controls="reporting" aria-selected="false">
@@ -320,20 +368,39 @@
                   <th>ID</th>
                   <th>Name</th>
                   <th>Status</th>
-                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="attendanceTable"></tbody>
             </table>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-3">
-            <button class="btn btn-light" onclick="addRow()">
-              <i class="fas fa-plus-circle me-2"></i>Add Row
-            </button>
             <button class="btn btn-success" onclick="saveAttendance()">
               <i class="fas fa-save me-2"></i>Save Attendance
             </button>
           </div>
+        </div>
+
+        <div class="tab-pane fade" id="myAttendance" role="tabpanel" aria-labelledby="myAttendance-tab">
+            <h4>My Saved Attendance Records</h4>
+            <div id="attendanceListSpinner" class="d-flex justify-content-center mt-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table text-white">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myAttendanceTable"></tbody>
+                </table>
+            </div>
+            <p id="noMyAttendance" class="text-muted text-center mt-3 hidden">No attendance records found.</p>
         </div>
 
         <div class="tab-pane fade" id="reporting" role="tabpanel" aria-labelledby="reporting-tab">
@@ -359,11 +426,46 @@
     </div>
   </div>
 
+  <!-- Custom Modal for Alerts -->
+  <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <h5 class="modal-title" id="alertModalLabel">Message</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body" id="alertModalBody">
+          <!-- Message content here -->
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for viewing full reports -->
+  <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <h5 class="modal-title" id="reportModalLabel">Full Report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body" id="reportModalBody">
+          <!-- Report content will be loaded here -->
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, getDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
       authDomain: "samrad-quiz.firebaseapp.com",
@@ -378,76 +480,191 @@
 
     let currentUser = {};
 
-    window.login = async () => {
-      const idInput = document.getElementById("userID");
-      const roleSelect = document.getElementById("userRole");
+    // Utility function to show custom modal alerts
+    function showCustomAlert(message) {
+      const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+      document.getElementById('alertModalBody').textContent = message;
+      modal.show();
+    }
 
-      const id = idInput.value.trim();
-      const role = roleSelect.value;
+    // Function to handle switching between forms
+    window.showReturningUserForm = () => {
+      document.getElementById('user-type-selection').classList.add('hidden');
+      document.getElementById('returning-user-form').classList.remove('hidden');
+      document.getElementById('login-intro-text').textContent = "Please enter your ID to log in.";
+      document.getElementById('userIDInput').value = '';
+    };
 
-      if (!id) {
-        idInput.classList.add('is-invalid');
+    window.showNewUserForm = () => {
+      document.getElementById('user-type-selection').classList.add('hidden');
+      document.getElementById('new-user-form').classList.remove('hidden');
+      document.getElementById('login-intro-text').textContent = "Please create your user profile.";
+      document.getElementById('firstName').value = '';
+      document.getElementById('lastName').value = '';
+    };
+
+    window.goBackToSelection = () => {
+      document.getElementById('returning-user-form').classList.add('hidden');
+      document.getElementById('new-user-form').classList.add('hidden');
+      document.getElementById('user-type-selection').classList.remove('hidden');
+      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+    };
+
+    window.loginUser = async () => {
+      const userID = document.getElementById("userIDInput").value.trim();
+      if (!userID) {
+        showCustomAlert("Please enter a User ID.");
         return;
+      }
+      
+      const userDocRef = doc(db, 'mywhelp_users', userID);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          currentUser = { id: userID, name: userData.name, role: userData.role };
+          showMainContent();
       } else {
-        idInput.classList.remove('is-invalid');
+          showCustomAlert("ID not found. Please go back and select 'I'm a New User' to register.");
+      }
+    };
+
+    // Helper function to generate a unique ID
+    async function generateUniqueId(firstName, lastName) {
+        let initials = '';
+        if (firstName) {
+            initials += firstName.charAt(0).toUpperCase();
+        }
+        if (lastName) {
+            initials += lastName.charAt(0).toUpperCase();
+        } else if (firstName) {
+            initials += firstName.charAt(0).toUpperCase(); // Use first initial twice if no last name
+        } else {
+            initials = 'XX'; // Default if no name
+        }
+
+        let newId = '';
+        let isUnique = false;
+        while (!isUnique) {
+            const randomNumber = Math.floor(100 + Math.random() * 900); // Generate a random 3-digit number
+            newId = `MW${randomNumber}${initials}`;
+            const userDocRef = doc(db, 'mywhelp_users', newId);
+            const userDocSnap = await getDoc(userDocRef);
+            if (!userDocSnap.exists()) {
+                isUnique = true;
+            }
+        }
+        return newId;
+    }
+
+    window.registerUser = async () => {
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const userRole = document.getElementById("userRole").value;
+      const userName = `${firstName} ${lastName}`.trim();
+
+      if (!firstName) {
+        showCustomAlert("Please enter your First Name to register.");
+        return;
       }
 
-      currentUser = { id, role };
+      const newUserID = await generateUniqueId(firstName, lastName);
+      
+      currentUser = { id: newUserID, name: userName, role: userRole };
+      try {
+        await setDoc(doc(db, 'mywhelp_users', newUserID), currentUser);
+        showCustomAlert(`Welcome! Your account has been created. Your unique ID is: ${newUserID}`);
+        showMainContent();
+      } catch (error) {
+        console.error("Error creating user:", error);
+        showCustomAlert("Failed to create account. Please try again.");
+      }
+    };
+    
+    function showMainContent() {
       document.getElementById("login-card").classList.add("hidden");
       document.getElementById("main-content").classList.remove("hidden");
-      document.getElementById("welcomeText").textContent = `Welcome, ${id} (${role})`;
       
-      // Pre-select today's date for attendance
       const today = new Date();
       const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       document.getElementById("attendanceDate").value = `${yyyy}-${mm}-${dd}`;
+      
+      // Dynamic greeting based on role
+      let greeting = `Welcome, ${currentUser.name}`;
+      if (currentUser.role !== 'Early Youth') {
+          greeting = `Greetings Brethren, ${currentUser.name}`;
+      }
+      document.getElementById("welcomeText").textContent = greeting;
 
+      generateAttendanceTable();
       loadReports();
       loadVisibleReports();
-    };
+      loadMyAttendance();
+    }
 
     window.logout = () => {
       currentUser = {};
       document.getElementById("main-content").classList.add("hidden");
       document.getElementById("login-card").classList.remove("hidden");
-      document.getElementById("userID").value = ""; // Clear ID on logout
-      document.getElementById("userRole").value = "Early Youth"; // Reset role
+      document.getElementById('returning-user-form').classList.add('hidden');
+      document.getElementById('new-user-form').classList.add('hidden');
+      document.getElementById('user-type-selection').classList.remove('hidden');
+      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+      
+      document.getElementById("myAttendanceTable").innerHTML = "";
+      document.getElementById("reportList").innerHTML = "";
+      document.getElementById("visibleReports").innerHTML = "";
     };
 
-    window.addRow = () => {
-      const table = document.getElementById("attendanceTable");
-      const row = table.insertRow();
-      row.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm" placeholder="MW ID"></td>
-        <td><input type="text" class="form-control form-control-sm" placeholder="Name"></td>
-        <td>
-          <select class="form-select form-select-sm attendance-status-select">
-            <option value="Present">Present</option>
-            <option value="Absent">Absent</option>
-            <option value="Late">Late</option>
-          </select>
-        </td>
-        <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-trash-alt"></i></button></td>
-      `;
-      // Apply correct status class to newly added select element for visual consistency
-      const selectElement = row.cells[2].querySelector("select");
-      // Set initial class based on default 'Present' option
-      selectElement.classList.add(`status-present`);
+    function generateAttendanceTable() {
+      const tableBody = document.getElementById("attendanceTable");
+      tableBody.innerHTML = "";
+      
+      const students = [
+        { id: 'MW01', name: 'Student 1' }, { id: 'MW02', name: 'Student 2' },
+        { id: 'MW03', name: 'Student 3' }, { id: 'MW04', name: 'Student 4' },
+        { id: 'MW05', name: 'Student 5' }, { id: 'MW06', name: 'Student 6' },
+        { id: 'MW07', name: 'Student 7' }, { id: 'MW08', name: 'Student 8' },
+        { id: 'MW09', name: 'Student 9' }, { id: 'MW10', name: 'Student 10' },
+        { id: 'MW11', name: 'Student 11' }, { id: 'MW12', name: 'Student 12' },
+        { id: 'MW13', name: 'Student 13' }, { id: 'MW14', name: 'Student 14' },
+        { id: 'MW15', name: 'Student 15' }, { id: 'MW16', name: 'Student 16' },
+        { id: 'MW17', name: 'Student 17' }, { id: 'MW18', name: 'Student 18' },
+        { id: 'MW19', name: 'Student 19' }, { id: 'MW20', name: 'Student 20' }
+      ];
 
-      selectElement.addEventListener('change', function() {
-        // Remove previous status classes
-        this.classList.remove('status-present', 'status-absent', 'status-late');
-        // Add new status class based on selected value
-        this.classList.add(`status-${this.value.toLowerCase()}`);
+      students.forEach(student => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>
+            <select class="form-select form-select-sm attendance-status-select">
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="Late">Late</option>
+            </select>
+          </td>
+        `;
+        const selectElement = row.cells[2].querySelector("select");
+        selectElement.classList.add(`status-present`);
+        selectElement.addEventListener('change', function() {
+            this.classList.remove('status-present', 'status-absent', 'status-late');
+            this.classList.add(`status-${this.value.toLowerCase()}`);
+        });
       });
-    };
+    }
 
     window.saveAttendance = async () => {
       const date = document.getElementById("attendanceDate").value;
       if (!date) {
-          alert("Please select a date for attendance.");
+          showCustomAlert("Please select a date for attendance.");
+          return;
+      }
+      if (!currentUser.id) {
+          showCustomAlert("Please log in to save attendance.");
           return;
       }
 
@@ -456,24 +673,16 @@
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        // Ensure you're selecting the input elements within the current row's cells
-        const idInput = row.cells[0].querySelector("input");
-        const nameInput = row.cells[1].querySelector("input");
+        const id = row.cells[0].textContent;
+        const name = row.cells[1].textContent;
         const statusSelect = row.cells[2].querySelector("select");
-
-        const id = idInput.value.trim();
-        const name = nameInput.value.trim();
         const status = statusSelect.value;
 
-        if (!id || !name) {
-          alert(`Please fill in both ID and Name for row ${i + 1} of attendance records.`);
-          return; // Stop if any row is incomplete
-        }
         attendanceRecords.push({ date, id, name, status, takenBy: currentUser.id });
       }
 
       if (attendanceRecords.length === 0) {
-          alert("Please add at least one row to save attendance.");
+          showCustomAlert("No student records to save.");
           return;
       }
 
@@ -481,19 +690,65 @@
         for (const record of attendanceRecords) {
           await addDoc(collection(db, "mywhelp_attendance"), record);
         }
-        alert("Attendance saved successfully!");
-        document.getElementById("attendanceTable").innerHTML = ""; // Clear table after saving
+        showCustomAlert("Attendance saved successfully!");
+        generateAttendanceTable(); 
+        loadMyAttendance();
       } catch (error) {
         console.error("Error saving attendance:", error);
-        alert("Failed to save attendance. Please try again.");
+        showCustomAlert("Failed to save attendance. Please try again.");
       }
     };
+
+    async function loadMyAttendance() {
+        const tableBody = document.getElementById("myAttendanceTable");
+        const noRecordsParagraph = document.getElementById("noMyAttendance");
+        const spinner = document.getElementById("attendanceListSpinner");
+
+        tableBody.innerHTML = "";
+        noRecordsParagraph.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        
+        if (!currentUser.id) {
+            spinner.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const q = query(collection(db, "mywhelp_attendance"), where("takenBy", "==", currentUser.id));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                noRecordsParagraph.classList.remove('hidden');
+            } else {
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const row = tableBody.insertRow();
+                    const statusClass = `status-${data.status.toLowerCase()}`;
+                    row.innerHTML = `
+                        <td>${data.date}</td>
+                        <td>${data.id}</td>
+                        <td>${data.name}</td>
+                        <td><span class="badge ${statusClass}">${data.status}</span></td>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error("Error loading my attendance records:", error);
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Error loading records.</td></tr>`;
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    }
 
     window.saveReport = async () => {
       const text = document.getElementById("reportText").value.trim();
       if (!text) {
-        alert("Report cannot be empty.");
+        showCustomAlert("Report cannot be empty.");
         return;
+      }
+      if (!currentUser.id) {
+          showCustomAlert("Please log in to save a report.");
+          return;
       }
 
       try {
@@ -504,13 +759,13 @@
           timestamp: new Date().toISOString()
         });
 
-        alert("Report saved successfully!");
+        showCustomAlert("Report saved successfully!");
         document.getElementById("reportText").value = "";
-        loadReports(); // Reload my reports
-        loadVisibleReports(); // Reload visible reports
+        loadReports();
+        loadVisibleReports();
       } catch (error) {
         console.error("Error saving report:", error);
-        alert("Failed to save report. Please try again.");
+        showCustomAlert("Failed to save report. Please try again.");
       }
     };
 
@@ -518,7 +773,9 @@
       const list = document.getElementById("reportList");
       const noReportsParagraph = document.getElementById("noMyReports");
       list.innerHTML = "";
-      noReportsParagraph.classList.add('hidden'); // Hide it by default
+      noReportsParagraph.classList.add('hidden');
+
+      if (!currentUser.id) { return; }
 
       try {
         const q = query(collection(db, "mywhelp_reports"), where("user", "==", currentUser.id));
@@ -555,10 +812,12 @@
       const list = document.getElementById("visibleReports");
       const noVisibleReportsParagraph = document.getElementById("noVisibleReports");
       list.innerHTML = "";
-      noVisibleReportsParagraph.classList.add('hidden'); // Hide it by default
+      noVisibleReportsParagraph.classList.add('hidden');
+
+      if (!currentUser.id) { return; }
 
       const viewMap = {
-        'RC': [], // RC can see everything, handled by logic below
+        'RC': ['Early Youth', 'Early Youth Instructor', 'Early Youth Advisor', 'TC'],
         'TC': ['Early Youth', 'Early Youth Instructor', 'Early Youth Advisor'],
         'Early Youth Advisor': ['Early Youth', 'Early Youth Instructor'],
         'Early Youth Instructor': ['Early Youth']
@@ -571,8 +830,7 @@
         allSnapshot.forEach(doc => {
           const data = doc.data();
           if (
-            data.user === currentUser.id || // Always see your own reports
-            currentUser.role === 'RC' || // RC sees all
+            data.user === currentUser.id ||
             (viewMap[currentUser.role] && viewMap[currentUser.role].includes(data.role))
           ) {
             const li = document.createElement("li");
@@ -601,7 +859,6 @@
       }
     }
 
-    // Modal for viewing full report content
     const reportModal = document.createElement('div');
     reportModal.className = 'modal fade';
     reportModal.id = 'reportModal';
@@ -616,7 +873,8 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
           </div>
           <div class="modal-body" id="reportModalBody">
-            </div>
+            <!-- Report content will be loaded here -->
+          </div>
           <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
@@ -632,16 +890,12 @@
       modalBody.textContent = reportContent;
     });
 
-    // Event listener for attendance status changes to update styling
     document.getElementById('attendanceTable').addEventListener('change', function(event) {
       if (event.target.classList.contains('attendance-status-select')) {
-        // Remove existing status classes
         event.target.classList.remove('status-present', 'status-absent', 'status-late');
-        // Add the new status class based on the selected value
         event.target.classList.add(`status-${event.target.value.toLowerCase()}`);
       }
     });
-
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
