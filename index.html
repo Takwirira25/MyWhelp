@@ -1,1722 +1,1126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyWhelp</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-gradient: linear-gradient(to right, #4a00e0, #8e2de2);
-      --secondary-color: #f0f2f5;
-      --card-bg: rgba(255, 255, 255, 0.08);
-      --border-radius-lg: 20px;
-      --transition-speed: 0.3s ease;
-    }
-
-    body {
-      background: var(--primary-gradient);
-      color: white;
-      font-family: 'Poppins', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .card {
-      background-color: var(--card-bg);
-      border: none;
-      border-radius: var(--border-radius-lg);
-      padding: 30px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
-    }
-
-    .form-control, .form-select {
-      background-color: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
-      padding: 12px 18px;
-      border-radius: 10px;
-      transition: all var(--transition-speed);
-    }
-
-    .form-control::placeholder, .form-select option {
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    .form-control:focus, .form-select:focus {
-      background-color: rgba(255, 255, 255, 0.25);
-      border-color: rgba(255, 255, 255, 0.6);
-      box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
-      color: white;
-    }
-
-    .form-control option {
-      background-color: #2c0b4e; /* Darker background for dropdown options */
-      color: white;
-    }
-
-    .btn {
-      border-radius: 10px;
-      padding: 12px 25px;
-      font-weight: 600;
-      transition: all var(--transition-speed);
-    }
-
-    .btn-primary {
-      background: linear-gradient(to right, #a033ff, #6214ff);
-      border: none;
-    }
-
-    .btn-primary:hover {
-      background: linear-gradient(to right, #be6bff, #7a3bff);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn-secondary {
-      background-color: transparent;
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background-color: rgba(255,255,255,0.1);
-      transform: translateY(-2px);
-    }
-    
-    .btn-warning {
-      background-color: #ffc107;
-      border: none;
-      color: #333;
-    }
-
-    .btn-warning:hover {
-      background-color: #e0a800;
-      transform: translateY(-2px);
-    }
-
-    .btn-success {
-      background-color: #28a745;
-      border: none;
-    }
-
-    .btn-success:hover {
-      background-color: #218838;
-      transform: translateY(-2px);
-    }
-
-    .btn-danger {
-      background-color: #dc3545;
-      border: none;
-    }
-
-    .btn-danger:hover {
-      background-color: #c82333;
-      transform: translateY(-2px);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .nav-tabs {
-      border-bottom: none;
-    }
-
-    .nav-tabs .nav-link {
-      color: rgba(255, 255, 255, 0.7);
-      border: none;
-      border-radius: 10px 10px 0 0;
-      padding: 12px 20px;
-      transition: all var(--transition-speed);
-      position: relative;
-      overflow: hidden;
-      margin-right: 5px;
-    }
-
-    .nav-tabs .nav-link::before {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: var(--secondary-color);
-      transform: scaleX(0);
-      transform-origin: bottom right;
-      transition: transform var(--transition-speed) ease-out;
-    }
-
-    .nav-tabs .nav-link.active::before {
-      transform: scaleX(1);
-      transform-origin: bottom left;
-    }
-
-    .nav-tabs .nav-link:hover {
-      color: white;
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .nav-tabs .nav-link.active {
-      color: white;
-      background-color: var(--card-bg);
-      border-bottom: none;
-    }
-
-    .tab-content {
-      background-color: var(--card-bg);
-      border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg);
-      padding: 30px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .table {
-      margin-top: 20px;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .table thead th {
-      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-      padding: 15px;
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .table tbody tr {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .table tbody tr:last-child {
-      border-bottom: none;
-    }
-
-    .table td {
-      padding: 12px 15px;
-      vertical-align: middle;
-    }
-
-    .table-responsive {
-      border-radius: 15px;
-      overflow-x: auto;
-    }
-
-    .list-group-item {
-      background-color: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      margin-bottom: 10px;
-      border-radius: 10px;
-      color: white;
-      padding: 15px;
-      transition: all var(--transition-speed);
-      overflow-wrap: break-word;
-    }
-
-    .list-group-item:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-      transform: translateX(5px);
-    }
-    
-    .list-group-item .report-content-preview {
-        max-height: 60px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        white-space: pre-wrap;
-    }
-
-    .list-group-item .list-item-content {
-      overflow-wrap: break-word;
-    }
-    
-    .list-group-item .list-item-content.overflow-hidden {
-        max-height: 60px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
-
-    /* Styles for the status dropdowns in attendance table */
-    .attendance-status-select {
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-weight: 600;
-        color: white;
-        background-color: transparent; /* Start with transparent background */
-        border: 1px solid rgba(255,255,255,0.3);
-        appearance: none; /* Remove default arrow on some browsers */
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 0.8rem 0.8rem;
-    }
-
-    .attendance-status-select.status-present { background-color: #28a745; border-color: #28a745; }
-    .attendance-status-select.status-absent { background-color: #dc3545; border-color: #dc3545; }
-    .attendance-status-select.status-late { background-color: #ffc107; color: #333; border-color: #ffc107; }
-
-    .evaluation-select-excellent { background-color: #28a745 !important; border-color: #28a745 !important; }
-    .evaluation-select-good { background-color: #0d6efd !important; border-color: #0d6efd !important; }
-    .evaluation-select-needsimprovement { background-color: #ffc107 !important; border-color: #ffc107 !important; }
-    .evaluation-select-expired { background-color: #6c757d !important; border-color: #6c757d !important; }
-
-    textarea.form-control {
-      min-height: 200px;
-      resize: vertical;
-    }
-
-    .input-group-text {
-        background-color: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        border-radius: 10px 0 0 10px;
-    }
-
-    .spinner-border {
-        color: white;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyWhelp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .form-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-input:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            outline: none;
+        }
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .tab-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom: 3px solid #fff;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
-<body>
-  <div class="container my-5">
-    <div id="login-card" class="card mx-auto" style="max-width: 450px;">
-      <h2 class="text-center mb-4">Welcome to <span style="font-weight: 700;">MyWhelp</span></h2>
-      <p id="login-intro-text" class="text-center text-muted mb-4">Are you a new or returning user?</p>
+<body class="bg-gradient-to-br from-indigo-800 to-purple-800 text-white min-h-screen flex items-center justify-center p-4">
 
-      <!-- Initial buttons for user type selection -->
-      <div id="user-type-selection" class="d-flex flex-column gap-3">
-        <button class="btn btn-primary w-100" onclick="showReturningUserForm()">
-          <i class="fas fa-sign-in-alt me-2"></i>I'm a Returning User
-        </button>
-        <button class="btn btn-primary w-100" onclick="showNewUserForm()">
-          <i class="fas fa-user-plus me-2"></i>I'm a New User
-        </button>
-      </div>
+    <div id="app-container" class="w-full max-w-6xl mx-auto">
+        <!-- Login Card -->
+        <div id="login-card" class="glass-effect rounded-2xl p-8 shadow-2xl max-w-md mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-2">Welcome to <span class="font-extrabold">MyWhelp</span></h2>
+            <p id="login-intro-text" class="text-center text-gray-300 mb-6">Are you a new or returning user?</p>
 
-      <!-- Login form - initially hidden -->
-      <div id="returning-user-form" class="hidden">
-        <p class="text-center text-muted mb-4">Please enter your ID to log in.</p>
-        <div class="input-group mb-3">
-          <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-          <input type="text" id="userIDInput" placeholder="Enter your User ID (e.g., EY123TD)" class="form-control">
-        </div>
-        <button id="login-button" class="btn btn-primary w-100" onclick="loginUser()">
-          <i class="fas fa-sign-in-alt me-2"></i>Login
-        </button>
-        <button class="btn btn-secondary w-100 mt-2" onclick="showForgotPasswordModal()">
-          <i class="fas fa-question-circle me-2"></i>Forgot ID?
-        </button>
-        <button class="btn btn-secondary w-100 mt-2" onclick="goBackToSelection()">
-          <i class="fas fa-arrow-left me-2"></i>Back
-        </button>
-      </div>
-
-      <!-- Registration form - initially hidden -->
-      <div id="new-user-form" class="hidden">
-        <p class="text-center text-muted mb-4">Please create your user profile.</p>
-        <div class="input-group mb-3">
-          <span class="input-group-text"><i class="fas fa-user"></i></span>
-          <input type="text" id="firstName" placeholder="First Name" class="form-control">
-        </div>
-        <div class="input-group mb-3">
-          <span class="input-group-text"><i class="fas fa-user"></i></span>
-          <input type="text" id="lastName" placeholder="Last Name" class="form-control">
-        </div>
-        <div class="input-group mb-4">
-          <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
-          <select id="userRole" class="form-select">
-            <option value="Early Youth">Early Youth</option>
-            <option value="Early Youth Instructor">Early Youth Instructor</option>
-            <option value="Early Youth Advisor">Early Youth Advisor</option>
-            <option value="TC">Territorial Coordinator (TC)</option>
-            <option value="RC">Regional Coordinator (RC)</option>
-          </select>
-        </div>
-        <button id="register-button" class="btn btn-primary w-100" onclick="registerUser()">
-          <i class="fas fa-user-plus me-2"></i>Register
-        </button>
-        <button class="btn btn-secondary w-100 mt-2" onclick="goBackToSelection()">
-          <i class="fas fa-arrow-left me-2"></i>Back
-        </button>
-      </div>
-      
-    </div>
-
-    <div id="main-content" class="hidden">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 id="welcomeText" class="mb-0"></h3>
-        <button class="btn btn-warning" onclick="logout()">
-          <i class="fas fa-sign-out-alt me-2"></i>Logout
-        </button>
-      </div>
-      <small id="userIdDisplay" class="d-block text-muted mb-3"></small>
-
-      <ul class="nav nav-tabs mb-3" id="menuTabs" role="tablist">
-        <li class="nav-item" role="presentation" id="myNotesTabLink">
-          <a class="nav-link active" id="mynotes-tab" data-bs-toggle="tab" href="#mynotes" role="tab" aria-controls="mynotes" aria-selected="true">
-            <i class="fas fa-sticky-note me-2"></i>Notes & To-dos
-          </a>
-        </li>
-        <li class="nav-item" role="presentation" id="attendanceTabLink">
-          <a class="nav-link" id="attendance-tab" data-bs-toggle="tab" href="#attendance" role="tab" aria-controls="attendance" aria-selected="false">
-            <i class="fas fa-clipboard-check me-2"></i>Take Attendance
-          </a>
-        </li>
-        <li class="nav-item" role="presentation" id="viewAttendanceTabLink">
-            <a class="nav-link" id="viewAttendance-tab" data-bs-toggle="tab" href="#viewAttendance" role="tab" aria-controls="viewAttendance" aria-selected="false">
-                <i class="fas fa-history me-2"></i>View Attendance
-            </a>
-        </li>
-        <li class="nav-item" role="presentation" id="evaluationsTabLink">
-            <a class="nav-link" id="evaluations-tab" data-bs-toggle="tab" href="#evaluations" role="tab" aria-controls="evaluations" aria-selected="false">
-                <i class="fas fa-star me-2"></i>Evaluations
-            </a>
-        </li>
-        <li class="nav-item" role="presentation" id="myEvaluationsTabLink">
-            <a class="nav-link" id="myEvaluations-tab" data-bs-toggle="tab" href="#myEvaluations" role="tab" aria-controls="myEvaluations" aria-selected="false">
-                <i class="fas fa-certificate me-2"></i>My Evaluations
-            </a>
-        </li>
-        <li class="nav-item" role="presentation" id="reportingTabLink">
-          <a class="nav-link" id="reporting-tab" data-bs-toggle="tab" href="#reporting" role="tab" aria-controls="reporting" aria-selected="false">
-            <i class="fas fa-file-alt me-2"></i>Reporting
-          </a>
-        </li>
-        <li class="nav-item" role="presentation" id="myReportsTabLink">
-          <a class="nav-link" id="myReports-tab" data-bs-toggle="tab" href="#myReports" role="tab" aria-controls="myReports" aria-selected="false">
-            <i class="fas fa-folder-open me-2"></i>My Reports
-          </a>
-        </li>
-        <li class="nav-item" role="presentation" id="allReportsTabLink">
-          <a class="nav-link" id="allReports-tab" data-bs-toggle="tab" href="#allReports" role="tab" aria-controls="allReports" aria-selected="false">
-            <i class="fas fa-eye me-2"></i>View Reports
-          </a>
-        </li>
-      </ul>
-
-      <div class="tab-content">
-        <!-- Tab for EY Notes & To-dos -->
-        <div class="tab-pane fade show active" id="mynotes" role="tabpanel" aria-labelledby="mynotes-tab">
-            <h4>Personal Notes</h4>
-            <textarea id="personalNoteText" class="form-control mb-3" rows="5" placeholder="Write your personal notes here..."></textarea>
-            <div class="d-flex justify-content-end mb-3">
-              <button class="btn btn-success" onclick="savePersonalNote()">
-                  <i class="fas fa-save me-2"></i>Save Note
-              </button>
+            <div id="user-type-selection" class="flex flex-col gap-4">
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center" onclick="showReturningUserForm()">
+                    <i class="fas fa-sign-in-alt mr-2"></i>I'm a Returning User
+                </button>
+                <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center" onclick="showNewUserForm()">
+                    <i class="fas fa-user-plus mr-2"></i>I'm a New User
+                </button>
             </div>
-            <div id="notesSpinner" class="d-flex justify-content-center mt-5">
-              <div class="spinner-border" role="status">
-                  <span class="visually-hidden">Loading...</span>
-              </div>
-            </div>
-            <ul id="personalNotesList" class="list-group"></ul>
-            <p id="noPersonalNotes" class="text-muted text-center mt-3 hidden">No notes found.</p>
 
-            <hr class="my-4">
-
-            <h4>To-do List</h4>
-            <div class="input-group mb-3">
-              <input type="text" id="todoInput" class="form-control" placeholder="Add a new to-do item...">
-              <button class="btn btn-success" type="button" onclick="addTodoItem()">Add</button>
-            </div>
-            <div id="todosSpinner" class="d-flex justify-content-center mt-5">
-              <div class="spinner-border" role="status">
-                  <span class="visually-hidden">Loading...</span>
-              </div>
-            </div>
-            <ul id="todoList" class="list-group"></ul>
-            <p id="noTodos" class="text-muted text-center mt-3 hidden">No to-do items found.</p>
-        </div>
-
-        <!-- Tab for taking attendance (EI only) -->
-        <div class="tab-pane fade" id="attendance" role="tabpanel" aria-labelledby="attendance-tab">
-          <h4>Take Attendance</h4>
-          <div class="input-group mb-3">
-            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-            <input type="date" id="attendanceDate" class="form-control">
-          </div>
-          <div id="attendanceStudentsSpinner" class="d-flex justify-content-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-          </div>
-          <div class="table-responsive">
-            <table class="table text-white">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="attendanceTable"></tbody>
-            </table>
-          </div>
-          <div class="d-flex justify-content-end gap-2 mt-3">
-            <button class="btn btn-success" onclick="saveAttendance()">
-              <i class="fas fa-save me-2"></i>Save Attendance
-            </button>
-          </div>
-        </div>
-        
-        <!-- Tab for viewing attendance (All except EY) -->
-        <div class="tab-pane fade" id="viewAttendance" role="tabpanel" aria-labelledby="viewAttendance-tab">
-            <h4>View All Attendance Records</h4>
-            <div id="attendanceViewSpinner" class="d-flex justify-content-center mt-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            <div id="returning-user-form" class="hidden">
+                <div class="relative mb-4">
+                    <i class="fas fa-id-card absolute top-3.5 left-4 text-gray-400"></i>
+                    <input type="text" id="userIDInput" placeholder="Enter your User ID (e.g., EY123TD)" class="form-input w-full pl-12 pr-4 py-3 rounded-lg text-white">
                 </div>
+                <button id="login-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mb-2" onclick="loginUser()">Login</button>
+                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotPasswordModal()">Forgot ID?</button>
+                <button class="w-full bg-transparent hover:bg-white/10 border border-white/20 text-white font-bold py-2 px-4 rounded-lg transition duration-300" onclick="goBackToSelection()">Back</button>
             </div>
-            <div class="accordion" id="attendanceAccordion"></div>
-            <p id="noAttendanceRecords" class="text-muted text-center mt-3 hidden">No attendance records found.</p>
+
+            <div id="new-user-form" class="hidden">
+                <input type="text" id="firstName" placeholder="First Name" class="form-input w-full mb-3 p-3 rounded-lg text-white">
+                <input type="text" id="lastName" placeholder="Last Name" class="form-input w-full mb-3 p-3 rounded-lg text-white">
+                <select id="userRole" class="form-input w-full p-3 rounded-lg text-white">
+                    <option value="Early Youth">Early Youth</option>
+                    <option value="Early Youth Instructor">Early Youth Instructor</option>
+                    <option value="Early Youth Advisor">Early Youth Advisor</option>
+                    <option value="TC">Territorial Coordinator (TC)</option>
+                    <option value="RC">Regional Coordinator (RC)</option>
+                </select>
+                <button id="register-button" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mt-4" onclick="registerUser()">Register</button>
+                <button class="w-full bg-transparent hover:bg-white/10 border border-white/20 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-2" onclick="goBackToSelection()">Back</button>
+            </div>
         </div>
 
-        <!-- Tab for EI to give evaluations to EY users -->
-        <div class="tab-pane fade" id="evaluations" role="tabpanel" aria-labelledby="evaluations-tab">
-          <h4>Give Evaluation to Early Youth</h4>
-          <div id="evaluationsStudentsSpinner" class="d-flex justify-content-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-          </div>
-          <ul id="evaluationList" class="list-group"></ul>
-          <p id="noEYUsers" class="text-muted text-center mt-3 hidden">No Early Youth users found.</p>
-        </div>
-
-        <!-- Tab for EY to see their own evaluations -->
-        <div class="tab-pane fade" id="myEvaluations" role="tabpanel" aria-labelledby="myEvaluations-tab">
-            <h4>My Evaluations</h4>
-            <div id="myEvaluationsSpinner" class="d-flex justify-content-center mt-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col">
+                    <h3 id="welcomeText" class="text-2xl font-bold"></h3>
+                    <span id="userIdDisplay" class="text-xs text-gray-400 mt-1"></span>
                 </div>
+                <button class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-lg transition duration-300" onclick="logout()">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
             </div>
-            <ul id="myEvaluationsList" class="list-group"></ul>
-            <p id="noMyEvaluations" class="text-muted text-center mt-3 hidden">No evaluations found.</p>
-        </div>
 
-        <!-- Tab for writing a report -->
-        <div class="tab-pane fade" id="reporting" role="tabpanel" aria-labelledby="reporting-tab">
-          <h4>Write Report</h4>
-          <textarea id="reportText" class="form-control mb-3" rows="10" placeholder="Write your report here..."></textarea>
-          <button class="btn btn-success w-100" onclick="saveReport()">
-            <i class="fas fa-paper-plane me-2"></i>Save Report
-          </button>
-        </div>
-
-        <!-- Tab for viewing my own reports -->
-        <div class="tab-pane fade" id="myReports" role="tabpanel" aria-labelledby="myReports-tab">
-          <h4>My Saved Reports</h4>
-          <div id="myReportsSpinner" class="d-flex justify-content-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div class="border-b border-white/20 mb-4">
+                <nav id="menuTabs" class="flex space-x-2" aria-label="Tabs">
+                    <!-- Tabs will be dynamically inserted here -->
+                </nav>
             </div>
-          </div>
-          <ul id="reportList" class="list-group"></ul>
-          <p id="noMyReports" class="text-muted text-center mt-3 hidden">No reports found.</p>
-        </div>
 
-        <!-- Tab for viewing all reports (based on hierarchy) -->
-        <div class="tab-pane fade" id="allReports" role="tabpanel" aria-labelledby="allReports-tab">
-          <h4>All Reports You Can View</h4>
-          <div id="allReportsSpinner" class="d-flex justify-content-center mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div id="tab-content-container" class="glass-effect rounded-2xl p-6 shadow-xl">
+                <!-- Tab content will be dynamically inserted here -->
             </div>
-          </div>
-          <ul id="visibleReports" class="list-group"></ul>
-          <p id="noVisibleReports" class="text-muted text-center mt-3 hidden">No reports available to view.</p>
         </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Custom Modal for Alerts -->
-  <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
-        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-          <h5 class="modal-title" id="alertModalLabel">Message</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+    <!-- Modals -->
+    <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-sm w-full">
+            <h5 class="text-xl font-bold mb-4" id="alertModalLabel">Message</h5>
+            <p id="alertModalBody" class="mb-6"></p>
+            <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('alertModal').classList.add('hidden')">OK</button>
         </div>
-        <div class="modal-body" id="alertModalBody">
-          <!-- Message content here -->
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
     </div>
-  </div>
-
-  <!-- Modal for viewing/editing reports -->
-  <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
-        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-          <h5 class="modal-title" id="reportModalLabel">Report Details</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+    
+    <div id="forgotIdModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h5 class="text-xl font-bold mb-4">Forgot My ID</h5>
+            <p class="text-gray-300 mb-4">Enter your first and last name to recover your ID.</p>
+            <input type="text" id="forgotFirstName" placeholder="First Name" class="form-input w-full mb-3 p-3 rounded-lg">
+            <input type="text" id="forgotLastName" placeholder="Last Name" class="form-input w-full mb-3 p-3 rounded-lg">
+            <div id="forgotIdChallenge" class="hidden mt-4">
+                <p id="challengeText" class="mb-2"></p>
+                <select id="challengeInput" class="form-input w-full p-3 rounded-lg">
+                    <option value="" disabled selected>Select the role</option>
+                    <option value="Early Youth Instructor">Early Youth Instructor</option>
+                    <option value="TC">Territorial Coordinator (TC)</option>
+                    <option value="RC">Regional Coordinator (RC)</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('forgotIdModal').classList.add('hidden')">Cancel</button>
+                <button id="submitForgotId" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="handleForgotIdSubmit()">Submit</button>
+            </div>
         </div>
-        <div class="modal-body">
-            <p class="text-muted">Author: <span id="reportAuthor"></span></p>
-            <p class="text-muted">Date: <span id="reportDate"></span></p>
-            <p id="editCountInfo" class="text-muted"></p>
-            <textarea id="reportModalTextarea" class="form-control mb-3" rows="10" readonly></textarea>
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
-          <button id="editReportButton" type="button" class="btn btn-info hidden">Edit</button>
-          <button id="saveEditedReportButton" type="button" class="btn btn-success hidden">Save</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
     </div>
-  </div>
-  
-  <!-- Modal for forgot ID recovery -->
-  <div class="modal fade" id="forgotIdModal" tabindex="-1" aria-labelledby="forgotIdModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
-        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-          <h5 class="modal-title" id="forgotIdModalLabel">Forgot My ID</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-2xl w-full">
+            <h5 class="text-xl font-bold mb-4" id="reportModalLabel">Report Details</h5>
+            <div class="text-sm text-gray-400 mb-2">Author: <span id="reportAuthor"></span></div>
+            <div class="text-sm text-gray-400 mb-2">Date: <span id="reportDate"></span></div>
+            <div id="editCountInfo" class="text-sm text-yellow-400 mb-4"></div>
+            <textarea id="reportModalTextarea" class="form-input w-full p-3 rounded-lg text-white h-64" readonly></textarea>
+            <div class="flex justify-end gap-4 mt-6">
+                <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('reportModal').classList.add('hidden')">Close</button>
+                <button id="editReportButton" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded-lg hidden">Edit</button>
+                <button id="saveEditedReportButton" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg hidden">Save Changes</button>
+            </div>
         </div>
-        <div class="modal-body">
-          <p>Please enter your first and last name to recover your ID.</p>
-          <div class="input-group mb-3">
-            <span class="input-group-text"><i class="fas fa-user"></i></span>
-            <input type="text" id="forgotFirstName" placeholder="First Name" class="form-control">
-          </div>
-          <div class="input-group mb-3">
-            <span class="input-group-text"><i class="fas fa-user"></i></span>
-            <input type="text" id="forgotLastName" placeholder="Last Name" class="form-control">
-          </div>
-          <div id="forgotIdChallenge" class="hidden">
-            <p id="challengeText"></p>
-            <input type="text" id="challengeInput" class="form-control" placeholder="Enter the matched role">
-          </div>
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
-          <button id="submitForgotId" type="button" class="btn btn-primary">Submit</button>
-        </div>
-      </div>
     </div>
-  </div>
-
-  <!-- Modal for editing a to-do item -->
-  <div class="modal fade" id="editTodoModal" tabindex="-1" aria-labelledby="editTodoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
-        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-          <h5 class="modal-title" id="editTodoModalLabel">Edit To-do Item</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+    
+    <div id="editTodoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h5 class="text-xl font-bold mb-4">Edit To-do Item</h5>
+            <input type="text" id="editTodoInput" class="form-input w-full p-3 rounded-lg">
+            <div class="flex justify-end gap-4 mt-6">
+                <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('editTodoModal').classList.add('hidden')">Cancel</button>
+                <button id="saveTodoEditButton" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg">Save</button>
+            </div>
         </div>
-        <div class="modal-body">
-          <input type="text" id="editTodoInput" class="form-control">
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
-          <button type="button" class="btn btn-success" id="saveTodoEditButton">Save</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module">
-    // Import required Firebase modules from v11.6.1
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Global variables provided by the environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-    
-    const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
+        // --- Environment & Config ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mywhelp-dev-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-    // Initialize Firebase services
-    let app, auth, db;
-    let userId;
+        // --- Firebase Services ---
+        let app, auth, db;
+        let currentUserId; // Firebase Auth UID
+        let currentUserProfile = {}; // MyWhelp app user profile
+        let unsubscribeListeners = []; // To detach listeners on logout
 
-    let currentUser = {
-      id: null,
-      name: null,
-      role: null
-    };
+        // --- Firestore Paths ---
+        const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
+        const getPrivateNotesCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/personal_notes`;
+        const getPrivateTodosCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/todos`;
+        const PUBLIC_REPORTS_COLLECTION = `artifacts/${appId}/public/data/reports`;
+        const PUBLIC_ATTENDANCE_COLLECTION = `artifacts/${appId}/public/data/attendance`;
+        const PUBLIC_EVALUATIONS_COLLECTION = `artifacts/${appId}/public/data/evaluations`;
 
-    // --- Firebase & Auth Initialization ---
-    async function initializeFirebase() {
-      try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        
-        onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            userId = user.uid;
-            console.log("Firebase Auth State Changed. User ID:", userId);
-            
-            // Check if user exists in our mywhelp_users collection
-            const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
-            const userDocSnap = await getDoc(userDocRef);
-            
-            if (userDocSnap.exists()) {
-              const userData = userDocSnap.data();
-              currentUser = {
-                id: userData.mywhelpId,
-                name: userData.name,
-                role: userData.role
-              };
-              showMainContent();
-            } else {
-              // User is authenticated but doesn't have a profile yet (e.g., just registered).
-              showLoginContent();
-            }
-          } else {
-            console.log("No user signed in.");
-            userId = null;
-            currentUser = { id: null, name: null, role: null };
-            showLoginContent();
-          }
-        });
+        // --- Initialization ---
+        async function initializeAppAndAuth() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
 
-        // Sign in with the custom token if available, otherwise sign in anonymously
-        if (initialAuthToken) {
-          await signInWithCustomToken(auth, initialAuthToken);
-          console.log("Signed in with custom token.");
-        } else {
-          await signInAnonymously(auth);
-          console.log("Signed in anonymously.");
-        }
-      } catch (error) {
-        console.error("Error initializing Firebase:", error);
-        showCustomAlert("Failed to initialize the application. Please try again.");
-      }
-    }
-
-    // --- UI/UX Functions ---
-    // Utility function to show custom modal alerts
-    function showCustomAlert(message) {
-      const modal = new bootstrap.Modal(document.getElementById('alertModal'));
-      document.getElementById('alertModalBody').textContent = message;
-      modal.show();
-    }
-
-    window.showReturningUserForm = () => {
-      document.getElementById('user-type-selection').classList.add('hidden');
-      document.getElementById('returning-user-form').classList.remove('hidden');
-      document.getElementById('login-intro-text').textContent = "Please enter your ID to log in.";
-      document.getElementById('userIDInput').value = '';
-    };
-
-    window.showNewUserForm = () => {
-      document.getElementById('user-type-selection').classList.add('hidden');
-      document.getElementById('new-user-form').classList.remove('hidden');
-      document.getElementById('login-intro-text').textContent = "Please create your user profile.";
-      document.getElementById('firstName').value = '';
-      document.getElementById('lastName').value = '';
-    };
-
-    window.goBackToSelection = () => {
-      document.getElementById('returning-user-form').classList.add('hidden');
-      document.getElementById('new-user-form').classList.add('hidden');
-      document.getElementById('user-type-selection').classList.remove('hidden');
-      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
-    };
-    
-    // Function to handle login with the custom 'mywhelpId'
-    window.loginUser = async () => {
-      const mywhelpId = document.getElementById("userIDInput").value.trim();
-      if (!mywhelpId) {
-        showCustomAlert("Please enter a User ID.");
-        return;
-      }
-      
-      try {
-        // Query the database for the user with the given mywhelpId
-        const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
-        const q = query(usersRef, where('mywhelpId', '==', mywhelpId));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          showCustomAlert("ID not found. Please go back and select 'I'm a New User' to register.");
-        } else {
-          const userDoc = querySnapshot.docs[0];
-          const userData = userDoc.data();
-          
-          // The code now relies on the onAuthStateChanged listener to handle the state.
-          // This ensures the main content only loads after a successful authentication,
-          // which happens on page load via the custom token or anonymously.
-          // We just need to ensure the user exists, which this check confirms.
-          showMainContent();
-        }
-      } catch (error) {
-        console.error("Error during login:", error);
-        showCustomAlert("An error occurred during login. Please try again.");
-      }
-    };
-
-    // Helper function to generate a unique ID based on role and initials
-    async function generateUniqueMywhelpId(firstName, lastName, role) {
-      let initials = '';
-      if (firstName) {
-        initials += firstName.charAt(0).toUpperCase();
-      }
-      if (lastName) {
-        initials += lastName.charAt(0).toUpperCase();
-      }
-      
-      const rolePrefixMap = {
-          "Early Youth": "EY",
-          "Early Youth Instructor": "EI",
-          "Early Youth Advisor": "EA",
-          "TC": "TC",
-          "RC": "RC"
-      };
-      const prefix = rolePrefixMap[role] || 'MW';
-
-      let newId = '';
-      let isUnique = false;
-      while (!isUnique) {
-        const randomNumber = Math.floor(100 + Math.random() * 900);
-        newId = `${prefix}${randomNumber}${initials.padEnd(2, 'X').slice(0, 2)}`;
-        
-        // Query to check for existing mywhelpId
-        const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
-        const q = query(usersRef, where('mywhelpId', '==', newId));
-        const querySnapshot = await getDocs(q);
-        
-        if (querySnapshot.empty) {
-          isUnique = true;
-        }
-      }
-      return newId;
-    }
-
-    window.registerUser = async () => {
-      const firstName = document.getElementById("firstName").value.trim();
-      const lastName = document.getElementById("lastName").value.trim();
-      const userRole = document.getElementById("userRole").value;
-      const userName = `${firstName} ${lastName}`.trim();
-
-      if (!firstName || !lastName) {
-        showCustomAlert("Please enter both your First Name and Last Name to register.");
-        return;
-      }
-      
-      if (!userId) {
-          showCustomAlert("Authentication failed. Please refresh the page and try again.");
-          return;
-      }
-
-      const mywhelpId = await generateUniqueMywhelpId(firstName, lastName, userRole);
-      
-      const newUser = {
-        mywhelpId: mywhelpId,
-        name: userName,
-        role: userRole,
-        uid: userId
-      };
-
-      try {
-        // Use the Firebase UID as the document ID for the user profile
-        await setDoc(doc(db, PUBLIC_USERS_COLLECTION, userId), newUser);
-        currentUser = {
-          id: mywhelpId,
-          name: userName,
-          role: userRole
-        };
-        showCustomAlert(`Welcome! Your account has been created. Your unique ID is: ${mywhelpId}`);
-        showMainContent();
-      } catch (error) {
-        console.error("Error creating user:", error);
-        showCustomAlert("Failed to create account. Please try again.");
-      }
-    };
-    
-    // Shows the login/registration interface
-    function showLoginContent() {
-      document.getElementById("main-content").classList.add("hidden");
-      document.getElementById("login-card").classList.remove("hidden");
-      document.getElementById('returning-user-form').classList.add('hidden');
-      document.getElementById('new-user-form').classList.add('hidden');
-      document.getElementById('user-type-selection').classList.remove('hidden');
-      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
-    }
-
-    // Shows the main application interface
-    function showMainContent() {
-      document.getElementById("login-card").classList.add("hidden");
-      document.getElementById("main-content").classList.remove("hidden");
-      
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById("attendanceDate").value = `${yyyy}-${mm}-${dd}`;
-      
-      // Dynamic greeting based on role
-      let greeting = `Welcome, ${currentUser.name}`;
-      if (currentUser.role !== 'Early Youth') {
-          greeting = `Greetings Brethren, ${currentUser.name}`;
-      }
-      document.getElementById("welcomeText").textContent = greeting;
-      document.getElementById("userIdDisplay").textContent = `Logged in as: ${currentUser.id} (UID: ${userId})`;
-
-      // Hide or show tabs based on user role
-      const isEarlyYouth = currentUser.role === 'Early Youth';
-      const isEarlyYouthInstructor = currentUser.role === 'Early Youth Instructor';
-      const canWriteReport = ['Early Youth Instructor', 'Early Youth Advisor', 'TC'].includes(currentUser.role);
-      const canViewAllReports = ['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role);
-      const canViewAllAttendance = ['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role);
-
-      document.getElementById('myNotesTabLink').classList.toggle('hidden', !isEarlyYouth);
-      document.getElementById('myEvaluationsTabLink').classList.toggle('hidden', !isEarlyYouth);
-      document.getElementById('attendanceTabLink').classList.toggle('hidden', !isEarlyYouthInstructor);
-      document.getElementById('evaluationsTabLink').classList.toggle('hidden', !isEarlyYouthInstructor);
-      document.getElementById('reportingTabLink').classList.toggle('hidden', !canWriteReport);
-      document.getElementById('myReportsTabLink').classList.toggle('hidden', !canWriteReport);
-      document.getElementById('allReportsTabLink').classList.toggle('hidden', !canViewAllReports);
-      document.getElementById('viewAttendanceTabLink').classList.toggle('hidden', !canViewAllAttendance);
-
-      // Reload data for all relevant tabs
-      if (isEarlyYouth) {
-        loadPersonalNotes();
-        loadTodoItems();
-        loadMyEvaluations();
-      }
-      if (isEarlyYouthInstructor) {
-        generateAttendanceTable();
-        loadStudentsForEvaluation();
-      }
-      if (canViewAllAttendance) {
-        loadAllAttendance();
-      }
-      if (canWriteReport) {
-        loadReports();
-      }
-      if (canViewAllReports) {
-        loadVisibleReports();
-      }
-    }
-
-    window.logout = async () => {
-      try {
-        await signOut(auth);
-        showLoginContent();
-      } catch (error) {
-        console.error("Error during logout:", error);
-        showCustomAlert("Failed to log out. Please try again.");
-      }
-    };
-    
-    // --- Forgot ID Functionality ---
-    window.showForgotPasswordModal = () => {
-      const modal = new bootstrap.Modal(document.getElementById('forgotIdModal'));
-      document.getElementById('forgotFirstName').value = '';
-      document.getElementById('forgotLastName').value = '';
-      document.getElementById('forgotIdChallenge').classList.add('hidden');
-      modal.show();
-    };
-    
-    window.submitForgotId = async () => {
-      const firstName = document.getElementById('forgotFirstName').value.trim();
-      const lastName = document.getElementById('forgotLastName').value.trim();
-      
-      if (!firstName || !lastName) {
-        showCustomAlert('Please enter both first and last name.');
-        return;
-      }
-      
-      try {
-        const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('name', '==', `${firstName} ${lastName}`));
-        const snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-          showCustomAlert('User not found. Please check your name or contact support at jdwhelp@gmail.com.');
-          return;
-        }
-        
-        // Find a random EI, RC, or TC user for the challenge
-        const rolesForChallenge = ['Early Youth Instructor', 'Regional Coordinator (RC)', 'Territorial Coordinator (TC)'];
-        const challengeUsersSnapshot = await getDocs(query(collection(db, PUBLIC_USERS_COLLECTION), where('role', 'in', rolesForChallenge)));
-        const challengeUsers = challengeUsersSnapshot.docs.map(doc => doc.data());
-        const randomChallengeUser = challengeUsers[Math.floor(Math.random() * challengeUsers.length)];
-        
-        if (!randomChallengeUser) {
-            showCustomAlert('Cannot perform ID recovery at this time. Please contact support.');
-            return;
-        }
-
-        const challengeDiv = document.getElementById('forgotIdChallenge');
-        document.getElementById('challengeText').textContent = `Match the role for Brethren ${randomChallengeUser.name}. Enter their role prefix (e.g., EI, RC, or TC).`;
-        challengeDiv.classList.remove('hidden');
-        
-        document.getElementById('submitForgotId').onclick = async () => {
-          const challengeAnswer = document.getElementById('challengeInput').value.trim().toUpperCase();
-          const correctPrefix = randomChallengeUser.mywhelpId.substring(0, 2);
-          
-          if (challengeAnswer === correctPrefix) {
-            const userDoc = snapshot.docs[0];
-            const userData = userDoc.data();
-            showCustomAlert(`Match successful! Your ID is: ${userData.mywhelpId}`);
-            document.getElementById('forgotIdModal').querySelector('.btn-close').click(); // Close modal
-          } else {
-            showCustomAlert('Match failed. Please contact Brethren John Doe at jdwhelp@gmail.com to retrieve your ID.');
-          }
-        };
-
-      } catch (error) {
-        console.error("Error in forgot ID logic:", error);
-        showCustomAlert('An error occurred. Please try again.');
-      }
-    };
-
-    // --- Attendance Functions ---
-    // Generates the attendance table with all EY users
-    async function generateAttendanceTable() {
-      const tableBody = document.getElementById("attendanceTable");
-      const spinner = document.getElementById('attendanceStudentsSpinner');
-      tableBody.innerHTML = "";
-      spinner.classList.remove('hidden');
-
-      if (!userId) {
-          spinner.classList.add('hidden');
-          return;
-      }
-      
-      try {
-          const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('role', '==', 'Early Youth'));
-          const snapshot = await getDocs(q);
-
-          if (snapshot.empty) {
-              tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No Early Youth users found.</td></tr>`;
-          } else {
-              snapshot.forEach(doc => {
-                  const student = doc.data();
-                  const row = tableBody.insertRow();
-                  row.innerHTML = `
-                      <td>${student.mywhelpId}</td>
-                      <td>${student.name}</td>
-                      <td>
-                          <select class="form-select form-select-sm attendance-status-select">
-                              <option value="Present">Present</option>
-                              <option value="Absent">Absent</option>
-                              <option value="Late">Late</option>
-                          </select>
-                      </td>
-                  `;
-                  const selectElement = row.cells[2].querySelector("select");
-                  selectElement.classList.add(`status-present`);
-                  selectElement.addEventListener('change', function() {
-                      this.classList.remove('status-present', 'status-absent', 'status-late');
-                      this.classList.add(`status-${this.value.toLowerCase()}`);
-                  });
-              });
-          }
-      } catch (error) {
-          console.error("Error generating attendance table:", error);
-          tableBody.innerHTML = `<tr><td colspan="3" class="text-danger text-center">Error loading students.</td></tr>`;
-      } finally {
-          spinner.classList.add('hidden');
-      }
-    }
-
-    window.saveAttendance = async () => {
-      const date = document.getElementById("attendanceDate").value;
-      if (!date) {
-          showCustomAlert("Please select a date for attendance.");
-          return;
-      }
-      if (!userId) {
-          showCustomAlert("Please log in to save attendance.");
-          return;
-      }
-
-      const rows = document.querySelectorAll("#attendanceTable tr");
-      if (rows.length === 0 || rows[0].cells.length === 1) { // Check for "No users found" message
-        showCustomAlert("No student records to save.");
-        return;
-      }
-      const attendanceRecords = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const id = row.cells[0].textContent;
-        const name = row.cells[1].textContent;
-        const statusSelect = row.cells[2].querySelector("select");
-        const status = statusSelect.value;
-
-        attendanceRecords.push({ date, studentId: id, studentName: name, status, takenBy: userId, takenByName: currentUser.name });
-      }
-
-      try {
-        const attendanceCollectionRef = collection(db, `artifacts/${appId}/public/data/attendance`);
-        for (const record of attendanceRecords) {
-          await addDoc(attendanceCollectionRef, record);
-        }
-        showCustomAlert("Attendance saved successfully!");
-        generateAttendanceTable();
-        loadAllAttendance();
-      } catch (error) {
-        console.error("Error saving attendance:", error);
-        showCustomAlert("Failed to save attendance. Please try again.");
-      }
-    };
-    
-    // Loads all attendance records for non-EY users
-    async function loadAllAttendance() {
-        const accordion = document.getElementById("attendanceAccordion");
-        const noRecordsParagraph = document.getElementById("noAttendanceRecords");
-        const spinner = document.getElementById("attendanceViewSpinner");
-
-        accordion.innerHTML = "";
-        noRecordsParagraph.classList.add('hidden');
-        spinner.classList.remove('hidden');
-
-        if (!userId || currentUser.role === 'Early Youth') {
-            spinner.classList.add('hidden');
-            return;
-        }
-
-        try {
-            const q = query(collection(db, `artifacts/${appId}/public/data/attendance`));
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                noRecordsParagraph.classList.remove('hidden');
-            } else {
-                // Group records by date
-                const recordsByDate = {};
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (!recordsByDate[data.date]) {
-                        recordsByDate[data.date] = [];
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        console.log("Auth state changed. User signed in with UID:", currentUserId);
+                        await loadUserProfile(currentUserId);
+                    } else {
+                        console.log("User signed out.");
+                        cleanupOnLogout();
+                        showLoginContent();
                     }
-                    recordsByDate[data.date].push(data);
                 });
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                showCustomAlert("Critical Error: Could not initialize the application.");
+            }
+        }
+        
+        // --- User Profile Management ---
+        async function loadUserProfile(uid) {
+            const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (userDocSnap.exists()) {
+                currentUserProfile = { uid: uid, ...userDocSnap.data() };
+                console.log("User profile loaded:", currentUserProfile);
+                showMainContent();
+            } else {
+                console.log("User is authenticated but has no profile. Showing login/register screen.");
+                showLoginContent();
+            }
+        }
+
+        // --- UI State Management ---
+        function showLoginContent() {
+            document.getElementById('login-card').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            goBackToSelection();
+        }
+
+        function showMainContent() {
+            document.getElementById('login-card').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('welcomeText').textContent = `Welcome, ${currentUserProfile.name}!`;
+            document.getElementById('userIdDisplay').textContent = `ID: ${currentUserProfile.mywhelpId}`;
+            setupDynamicUI();
+        }
+        
+        // --- Dynamic UI based on Role ---
+        function setupDynamicUI() {
+            const role = currentUserProfile.role;
+            const tabsContainer = document.getElementById('menuTabs');
+            const contentContainer = document.getElementById('tab-content-container');
+            
+            tabsContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+            
+            let tabs = [];
+            
+            // Define all possible tabs
+            const allTabs = {
+                notes: { title: 'Notes & To-dos', icon: 'fa-sticky-note', content: getNotesContent(), condition: true },
+                takeAttendance: { title: 'Take Attendance', icon: 'fa-clipboard-check', content: getAttendanceContent(), condition: role === 'Early Youth Instructor' },
+                viewAttendance: { title: 'View Attendance', icon: 'fa-history', content: getViewAttendanceContent(), condition: role !== 'Early Youth' },
+                giveEvaluations: { title: 'Give Evaluations', icon: 'fa-star', content: getGiveEvaluationsContent(), condition: role === 'Early Youth Instructor' },
+                myEvaluations: { title: 'My Evaluations', icon: 'fa-certificate', content: getMyEvaluationsContent(), condition: role === 'Early Youth' },
+                reporting: { title: 'Write Report', icon: 'fa-file-alt', content: getReportingContent(), condition: role !== 'Early Youth' && role !== 'RC' },
+                myReports: { title: 'My Reports', icon: 'fa-folder-open', content: getMyReportsContent(), condition: role !== 'Early Youth' && role !== 'RC' },
+                viewReports: { title: 'View Reports', icon: 'fa-eye', content: getAllReportsContent(), condition: role !== 'Early Youth' },
+            };
+
+            // Filter tabs based on user role
+            Object.keys(allTabs).forEach(key => {
+                if (allTabs[key].condition) {
+                    tabs.push({ id: key, ...allTabs[key] });
+                }
+            });
+
+            // Create tab links and content panes
+            tabs.forEach((tab, index) => {
+                const isActive = index === 0;
+                tabsContainer.innerHTML += `
+                    <a href="#" id="${tab.id}-tab-link" class="tab-link py-2 px-4 text-sm font-medium text-center text-gray-300 rounded-t-lg transition duration-300 ${isActive ? 'active' : ''}" onclick="switchTab(event, '${tab.id}')">
+                        <i class="fas ${tab.icon} mr-2"></i>${tab.title}
+                    </a>`;
+                contentContainer.innerHTML += `
+                    <div id="${tab.id}-content" class="${isActive ? '' : 'hidden'}">
+                        ${tab.content}
+                    </div>`;
+            });
+            
+            // Activate relevant data listeners for the visible tabs
+            activateDataListeners();
+        }
+
+        function activateDataListeners() {
+            // Clear previous listeners
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+
+            const role = currentUserProfile.role;
+
+            if (document.getElementById('notes-content')) {
+                loadPersonalNotes();
+                loadTodoItems();
+            }
+            if (role === 'Early Youth Instructor' && document.getElementById('takeAttendance-content')) {
+                loadStudentsForAttendance();
+            }
+            if (role !== 'Early Youth' && document.getElementById('viewAttendance-content')) {
+                loadAllAttendanceRecords();
+            }
+            if (role === 'Early Youth Instructor' && document.getElementById('giveEvaluations-content')) {
+                loadEYForEvaluation();
+            }
+            if (role === 'Early Youth' && document.getElementById('myEvaluations-content')) {
+                loadMyEvaluations();
+            }
+            if ((role !== 'Early Youth' && role !== 'RC') && document.getElementById('myReports-content')) {
+                loadMyReports();
+            }
+            if (role !== 'Early Youth' && document.getElementById('viewReports-content')) {
+                loadVisibleReports();
+            }
+        }
+        
+        window.switchTab = (event, tabId) => {
+            event.preventDefault();
+            // Hide all content
+            document.querySelectorAll('#tab-content-container > div').forEach(div => div.classList.add('hidden'));
+            // Deactivate all links
+            document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
+            // Show selected content and activate link
+            document.getElementById(`${tabId}-content`).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- UI Content Generators ---
+        const getSpinner = (id) => `<div id="${id}" class="flex justify-center p-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div></div>`;
+        
+        function getNotesContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Personal Notes</h4>
+                <textarea id="personalNoteText" class="form-input w-full p-3 rounded-lg h-32" placeholder="Write your private notes here..."></textarea>
+                <div class="flex justify-end mt-2 mb-6">
+                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="savePersonalNote()"><i class="fas fa-save mr-2"></i>Save Note</button>
+                </div>
+                ${getSpinner('notesSpinner')}
+                <ul id="personalNotesList" class="space-y-2"></ul>
+                <p id="noPersonalNotes" class="text-gray-400 text-center mt-4 hidden">No notes found.</p>
+                <hr class="border-white/20 my-6">
+                <h4 class="text-xl font-bold mb-4">To-do List</h4>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="todoInput" class="form-input flex-grow p-3 rounded-lg" placeholder="Add a new to-do item...">
+                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="addTodoItem()">Add</button>
+                </div>
+                ${getSpinner('todosSpinner')}
+                <ul id="todoList" class="space-y-2"></ul>
+                <p id="noTodos" class="text-gray-400 text-center mt-4 hidden">No to-do items found.</p>
+            `;
+        }
+
+        function getAttendanceContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Take Attendance</h4>
+                <input type="date" id="attendanceDate" class="form-input p-3 rounded-lg mb-4 w-full md:w-auto">
+                ${getSpinner('attendanceStudentsSpinner')}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead><tr class="border-b border-white/20"><th class="p-3">Name</th><th class="p-3">Status</th></tr></thead>
+                        <tbody id="attendanceTable"></tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveAttendance()"><i class="fas fa-save mr-2"></i>Save Attendance</button>
+                </div>
+            `;
+        }
+        
+        function getViewAttendanceContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">View Attendance Records</h4>
+                ${getSpinner('attendanceViewSpinner')}
+                <div id="attendanceAccordion" class="space-y-2"></div>
+                <p id="noAttendanceRecords" class="text-gray-400 text-center mt-4 hidden">No attendance records found.</p>
+            `;
+        }
+        
+        function getGiveEvaluationsContent() {
+             return `
+                <h4 class="text-xl font-bold mb-4">Give Evaluation to Early Youth</h4>
+                ${getSpinner('evaluationsStudentsSpinner')}
+                <ul id="evaluationList" class="space-y-3"></ul>
+                <p id="noEYUsers" class="text-gray-400 text-center mt-4 hidden">No Early Youth users found to evaluate.</p>
+            `;
+        }
+        
+        function getMyEvaluationsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">My Evaluations</h4>
+                ${getSpinner('myEvaluationsSpinner')}
+                <ul id="myEvaluationsList" class="space-y-3"></ul>
+                <p id="noMyEvaluations" class="text-gray-400 text-center mt-4 hidden">You have not received any evaluations yet.</p>
+            `;
+        }
+
+        function getReportingContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Write Report</h4>
+                <textarea id="reportText" class="form-input w-full p-3 rounded-lg h-48" placeholder="Write your report here..."></textarea>
+                <div class="flex justify-end mt-2">
+                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveReport()"><i class="fas fa-paper-plane mr-2"></i>Submit Report</button>
+                </div>
+            `;
+        }
+        
+        function getMyReportsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">My Saved Reports</h4>
+                ${getSpinner('myReportsSpinner')}
+                <ul id="reportList" class="space-y-3"></ul>
+                <p id="noMyReports" class="text-gray-400 text-center mt-4 hidden">You have not created any reports.</p>
+            `;
+        }
+        
+        function getAllReportsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Viewable Reports</h4>
+                ${getSpinner('allReportsSpinner')}
+                <ul id="visibleReports" class="space-y-3"></ul>
+                <p id="noVisibleReports" class="text-gray-400 text-center mt-4 hidden">No reports are available for you to view.</p>
+            `;
+        }
+        
+        // --- Feature Implementation ---
+
+        // Registration & Login
+        window.registerUser = async () => {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const role = document.getElementById('userRole').value;
+
+            if (!firstName || !lastName) {
+                return showCustomAlert("First and Last name are required.");
+            }
+            if (!auth.currentUser) {
+                return showCustomAlert("Authentication not ready. Please wait and try again.");
+            }
+
+            const mywhelpId = generateMyWhelpId(firstName, lastName, role);
+            const userUid = auth.currentUser.uid;
+
+            const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userUid);
+            
+            try {
+                await setDoc(userDocRef, {
+                    mywhelpId: mywhelpId,
+                    name: `${firstName} ${lastName}`,
+                    firstName: firstName,
+                    lastName: lastName,
+                    role: role,
+                    createdAt: serverTimestamp()
+                });
+                showCustomAlert(`Registration Successful! Your new ID is: ${mywhelpId}. Please save it securely.`);
+                await loadUserProfile(userUid);
+            } catch (error) {
+                console.error("Registration Error:", error);
+                showCustomAlert("Could not register user. Please try again.");
+            }
+        };
+        
+        window.loginUser = async () => {
+            const mywhelpId = document.getElementById('userIDInput').value.trim().toUpperCase();
+            if (!mywhelpId) return showCustomAlert("Please enter your User ID.");
+
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("mywhelpId", "==", mywhelpId));
+                const querySnapshot = await getDocs(q);
                 
-                const sortedDates = Object.keys(recordsByDate).sort((a, b) => new Date(b) - new Date(a));
+                if (querySnapshot.empty) {
+                    return showCustomAlert("Invalid User ID. Please check and try again.");
+                }
+                
+                const userDoc = querySnapshot.docs[0];
+                // In a real app, you'd have a more secure login. Here we just load the profile.
+                // This assumes the user is already authenticated with Firebase Auth.
+                // We are essentially just "switching" to this profile.
+                // For this app's logic, we assume the Firebase user is constant and we are just mapping it to a profile.
+                // A better approach would be to re-authenticate, but this matches the simple ID login flow.
+                currentUserId = userDoc.id; // Set the current user's UID
+                await loadUserProfile(currentUserId);
 
-                // Create an accordion item for each date
-                for (const date of sortedDates) {
-                    const accordionItem = document.createElement('div');
-                    accordionItem.className = 'accordion-item';
-                    
-                    const headerId = `heading-${date}`;
-                    const collapseId = `collapse-${date}`;
-                    
-                    accordionItem.innerHTML = `
-                        <h2 class="accordion-header" id="${headerId}">
-                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
-                            Attendance on ${date}
-                          </button>
-                        </h2>
-                        <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#attendanceAccordion">
-                          <div class="accordion-body" style="background-color: rgba(255, 255, 255, 0.05);">
-                            <table class="table text-white">
-                              <thead>
-                                <tr>
-                                  <th>ID</th>
-                                  <th>Name</th>
-                                  <th>Status</th>
-                                  <th>Taken By</th>
-                                </tr>
-                              </thead>
-                              <tbody id="attendanceTable-${date}"></tbody>
-                            </table>
-                          </div>
-                        </div>
-                    `;
-                    accordion.appendChild(accordionItem);
+            } catch (error) {
+                console.error("Login error:", error);
+                showCustomAlert("An error occurred during login.");
+            }
+        };
 
-                    const tableBody = accordionItem.querySelector(`#attendanceTable-${date}`);
-                    recordsByDate[date].forEach(record => {
-                        const row = tableBody.insertRow();
-                        const statusClass = `status-${record.status.toLowerCase()}`;
-                        row.innerHTML = `
-                            <td>${record.studentId}</td>
-                            <td>${record.studentName}</td>
-                            <td><span class="badge rounded-pill ${statusClass}">${record.status}</span></td>
-                            <td>${record.takenByName}</td>
+        window.logout = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        };
+
+        function cleanupOnLogout() {
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+            currentUserProfile = {};
+            currentUserId = null;
+        }
+
+        function generateMyWhelpId(firstName, lastName, role) {
+            const initials = (firstName[0] || '') + (lastName[0] || '');
+            const randomNums = Math.floor(100 + Math.random() * 900); // 3 random digits
+            let prefix = '';
+            switch(role) {
+                case 'Early Youth': prefix = 'EY'; break;
+                case 'Early Youth Instructor': prefix = 'EI'; break;
+                case 'Early Youth Advisor': prefix = 'EA'; break;
+                case 'TC': prefix = 'TC'; break;
+                case 'RC': prefix = 'RC'; break;
+            }
+            return `${prefix}${randomNums}${initials}`.toUpperCase();
+        }
+
+        // Notes & Todos
+        window.savePersonalNote = async () => {
+            const text = document.getElementById('personalNoteText').value.trim();
+            if (!text) return showCustomAlert("Note cannot be empty.");
+            try {
+                const notesCollection = collection(db, getPrivateNotesCollectionPath(currentUserId));
+                await addDoc(notesCollection, {
+                    content: text,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('personalNoteText').value = '';
+            } catch (error) {
+                console.error("Error saving note:", error);
+                showCustomAlert("Failed to save note.");
+            }
+        };
+
+        function loadPersonalNotes() {
+            const notesSpinner = document.getElementById('notesSpinner');
+            const notesList = document.getElementById('personalNotesList');
+            const noNotes = document.getElementById('noPersonalNotes');
+            
+            const q = query(collection(db, getPrivateNotesCollectionPath(currentUserId)));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                notesSpinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    notesList.innerHTML = '';
+                    noNotes.classList.remove('hidden');
+                } else {
+                    noNotes.classList.add('hidden');
+                    let notesHTML = '';
+                    snapshot.docs.forEach(doc => {
+                        const note = doc.data();
+                        notesHTML += `
+                            <li class="glass-effect p-3 rounded-lg flex justify-between items-start">
+                                <p class="flex-grow whitespace-pre-wrap mr-4">${note.content}</p>
+                                <button class="text-red-400 hover:text-red-300" onclick="deletePersonalNote('${doc.id}')"><i class="fas fa-trash"></i></button>
+                            </li>`;
+                    });
+                    notesList.innerHTML = notesHTML;
+                }
+            }, (error) => {
+                console.error("Error loading notes:", error);
+                notesSpinner.classList.add('hidden');
+                noNotes.textContent = "Error loading notes.";
+                noNotes.classList.remove('hidden');
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+        
+        window.deletePersonalNote = async (noteId) => {
+            if (!confirm("Are you sure you want to delete this note?")) return;
+            try {
+                await deleteDoc(doc(db, getPrivateNotesCollectionPath(currentUserId), noteId));
+            } catch (error) {
+                console.error("Error deleting note:", error);
+                showCustomAlert("Failed to delete note.");
+            }
+        };
+
+        window.addTodoItem = async () => {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+            try {
+                await addDoc(collection(db, getPrivateTodosCollectionPath(currentUserId)), {
+                    text: text,
+                    completed: false,
+                    createdAt: serverTimestamp()
+                });
+                input.value = '';
+            } catch(error) {
+                console.error("Error adding todo:", error);
+                showCustomAlert("Failed to add to-do item.");
+            }
+        };
+
+        function loadTodoItems() {
+            const todosSpinner = document.getElementById('todosSpinner');
+            const todoList = document.getElementById('todoList');
+            const noTodos = document.getElementById('noTodos');
+            
+            const q = query(collection(db, getPrivateTodosCollectionPath(currentUserId)));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                todosSpinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    todoList.innerHTML = '';
+                    noTodos.classList.remove('hidden');
+                } else {
+                    noTodos.classList.add('hidden');
+                    let todosHTML = '';
+                    snapshot.docs.forEach(doc => {
+                        const todo = doc.data();
+                        todosHTML += `
+                            <li class="glass-effect p-3 rounded-lg flex justify-between items-center">
+                                <div class="flex items-center flex-grow">
+                                    <input type="checkbox" class="mr-3" onchange="toggleTodo('${doc.id}', this.checked)" ${todo.completed ? 'checked' : ''}>
+                                    <span class="${todo.completed ? 'line-through text-gray-400' : ''}">${todo.text}</span>
+                                </div>
+                                <div>
+                                    <button class="text-blue-400 hover:text-blue-300 mr-2" onclick="showEditTodoModal('${doc.id}', '${todo.text}')"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-400 hover:text-red-300" onclick="deleteTodo('${doc.id}')"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </li>`;
+                    });
+                    todoList.innerHTML = todosHTML;
+                }
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+        
+        window.toggleTodo = async (todoId, completed) => {
+            const todoRef = doc(db, getPrivateTodosCollectionPath(currentUserId), todoId);
+            await updateDoc(todoRef, { completed: completed });
+        };
+
+        window.deleteTodo = async (todoId) => {
+            if (!confirm("Are you sure?")) return;
+            await deleteDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), todoId));
+        };
+        
+        window.showEditTodoModal = (id, text) => {
+            document.getElementById('editTodoInput').value = text;
+            document.getElementById('saveTodoEditButton').onclick = () => saveTodoEdit(id);
+            document.getElementById('editTodoModal').classList.remove('hidden');
+        };
+
+        async function saveTodoEdit(id) {
+            const newText = document.getElementById('editTodoInput').value.trim();
+            if (!newText) return showCustomAlert("Text cannot be empty.");
+            const todoRef = doc(db, getPrivateTodosCollectionPath(currentUserId), id);
+            await updateDoc(todoRef, { text: newText });
+            document.getElementById('editTodoModal').classList.add('hidden');
+        }
+
+        // --- Attendance ---
+        async function loadStudentsForAttendance() {
+            const spinner = document.getElementById('attendanceStudentsSpinner');
+            const tableBody = document.getElementById('attendanceTable');
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
+                const snapshot = await getDocs(q);
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="2" class="text-center p-4">No students found.</td></tr>';
+                } else {
+                    let rows = '';
+                    snapshot.docs.forEach(doc => {
+                        const student = doc.data();
+                        rows += `
+                            <tr class="border-b border-white/20">
+                                <td class="p-3">${student.name}</td>
+                                <td class="p-3">
+                                    <select class="attendance-status-select form-input rounded-lg p-2" data-uid="${doc.id}">
+                                        <option value="Present">Present</option>
+                                        <option value="Absent">Absent</option>
+                                        <option value="Late">Late</option>
+                                    </select>
+                                </td>
+                            </tr>
                         `;
                     });
+                    tableBody.innerHTML = rows;
+                }
+            } catch (error) {
+                console.error("Error loading students for attendance:", error);
+                spinner.classList.add('hidden');
+                tableBody.innerHTML = '<tr><td colspan="2" class="text-center p-4 text-red-400">Error loading students.</td></tr>';
+            }
+        }
+        
+        window.saveAttendance = async () => {
+            const date = document.getElementById('attendanceDate').value;
+            if (!date) return showCustomAlert("Please select a date.");
+
+            const attendanceData = {};
+            document.querySelectorAll('.attendance-status-select').forEach(select => {
+                attendanceData[select.dataset.uid] = {
+                    status: select.value,
+                    name: select.closest('tr').cells[0].textContent // a bit fragile, but works
+                };
+            });
+
+            if (Object.keys(attendanceData).length === 0) {
+                return showCustomAlert("No students to record.");
+            }
+            
+            try {
+                const attendanceDocRef = doc(db, PUBLIC_ATTENDANCE_COLLECTION, date);
+                await setDoc(attendanceDocRef, {
+                    records: attendanceData,
+                    recordedBy: currentUserProfile.name,
+                    recordedById: currentUserProfile.mywhelpId,
+                    createdAt: serverTimestamp()
+                });
+                showCustomAlert(`Attendance for ${date} saved successfully.`);
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                showCustomAlert("Failed to save attendance.");
+            }
+        };
+
+        function loadAllAttendanceRecords() {
+            const spinner = document.getElementById('attendanceViewSpinner');
+            const accordion = document.getElementById('attendanceAccordion');
+            const noRecords = document.getElementById('noAttendanceRecords');
+
+            const q = query(collection(db, PUBLIC_ATTENDANCE_COLLECTION));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    accordion.innerHTML = '';
+                    noRecords.classList.remove('hidden');
+                } else {
+                    noRecords.classList.add('hidden');
+                    let html = '';
+                    snapshot.docs.sort((a, b) => b.id.localeCompare(a.id)).forEach(doc => { // Sort by date desc
+                        const record = doc.data();
+                        let studentRows = '';
+                        for (const uid in record.records) {
+                            const student = record.records[uid];
+                            let statusColor = 'text-gray-300';
+                            if (student.status === 'Present') statusColor = 'text-green-400';
+                            if (student.status === 'Absent') statusColor = 'text-red-400';
+                            if (student.status === 'Late') statusColor = 'text-yellow-400';
+                            studentRows += `<tr><td class="py-1 px-2">${student.name}</td><td class="py-1 px-2 font-semibold ${statusColor}">${student.status}</td></tr>`;
+                        }
+
+                        html += `
+                            <div class="glass-effect rounded-lg">
+                                <button class="w-full text-left p-4 font-bold flex justify-between items-center" onclick="toggleAccordion(this)">
+                                    <span>Date: ${doc.id}</span>
+                                    <i class="fas fa-chevron-down transition-transform"></i>
+                                </button>
+                                <div class="px-4 pb-4 hidden">
+                                    <p class="text-sm text-gray-400 mb-2">Recorded by: ${record.recordedBy}</p>
+                                    <table class="w-full text-sm"><tbody>${studentRows}</tbody></table>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    accordion.innerHTML = html;
+                }
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.toggleAccordion = (element) => {
+            const content = element.nextElementSibling;
+            const icon = element.querySelector('i');
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        };
+
+        // --- Evaluations ---
+        async function loadEYForEvaluation() {
+            const spinner = document.getElementById('evaluationsStudentsSpinner');
+            const list = document.getElementById('evaluationList');
+            const noUsers = document.getElementById('noEYUsers');
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
+                const snapshot = await getDocs(q);
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    noUsers.classList.remove('hidden');
+                } else {
+                    noUsers.classList.add('hidden');
+                    let items = '';
+                    snapshot.docs.forEach(doc => {
+                        const student = doc.data();
+                        items += `
+                            <li class="glass-effect p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center">
+                                <span class="font-semibold mb-2 md:mb-0">${student.name}</span>
+                                <div class="flex gap-2">
+                                    <select class="evaluation-select form-input rounded-lg p-2" data-ey-uid="${doc.id}">
+                                        <option value="" disabled selected>Give Rating</option>
+                                        <option value="Excellent">Excellent</option>
+                                        <option value="Good">Good</option>
+                                        <option value="Needs Improvement">Needs Improvement</option>
+                                    </select>
+                                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveEvaluation(this)">Save</button>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    list.innerHTML = items;
+                }
+            } catch (error) {
+                console.error("Error loading EY users for evaluation:", error);
+                spinner.classList.add('hidden');
+                noUsers.textContent = "Error loading users.";
+                noUsers.classList.remove('hidden');
+            }
+        }
+        
+        window.saveEvaluation = async (button) => {
+            const select = button.previousElementSibling;
+            const eyUid = select.dataset.eyUid;
+            const rating = select.value;
+
+            if (!rating) return showCustomAlert("Please select a rating.");
+            
+            try {
+                // Use a composite ID to allow multiple evaluations but easily query them
+                const evalId = `${eyUid}_${new Date().toISOString()}`;
+                await setDoc(doc(db, PUBLIC_EVALUATIONS_COLLECTION, evalId), {
+                    eyUid: eyUid,
+                    rating: rating,
+                    evaluatorName: currentUserProfile.name,
+                    evaluatorId: currentUserProfile.mywhelpId,
+                    createdAt: serverTimestamp(),
+                    status: 'Active' // Active or Expired
+                });
+                showCustomAlert("Evaluation saved successfully.");
+                select.value = ''; // Reset dropdown
+            } catch (error) {
+                console.error("Error saving evaluation:", error);
+                showCustomAlert("Failed to save evaluation.");
+            }
+        };
+
+        function loadMyEvaluations() {
+            const spinner = document.getElementById('myEvaluationsSpinner');
+            const list = document.getElementById('myEvaluationsList');
+            const noEvals = document.getElementById('noMyEvaluations');
+            
+            const q = query(collection(db, PUBLIC_EVALUATIONS_COLLECTION), where("eyUid", "==", currentUserId));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    list.innerHTML = '';
+                    noEvals.classList.remove('hidden');
+                } else {
+                    noEvals.classList.add('hidden');
+                    let items = '';
+                    snapshot.docs.sort((a,b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis()).forEach(doc => {
+                        const evalData = doc.data();
+                        let statusColor = evalData.status === 'Active' ? 'text-green-400' : 'text-gray-500';
+                        let ratingColor = 'text-white';
+                        if (evalData.rating === 'Excellent') ratingColor = 'text-green-400';
+                        if (evalData.rating === 'Good') ratingColor = 'text-blue-400';
+                        if (evalData.rating === 'Needs Improvement') ratingColor = 'text-yellow-400';
+
+                        items += `
+                            <li class="glass-effect p-4 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold ${ratingColor}">${evalData.rating}</p>
+                                    <p class="text-sm text-gray-300">From: ${evalData.evaluatorName}</p>
+                                    <p class="text-xs text-gray-400">On: ${new Date(evalData.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-semibold ${statusColor}">${evalData.status}</span>
+                                    ${currentUserProfile.role === 'Early Youth Instructor' ? `<button class="ml-4 text-red-500 hover:text-red-400" onclick="expireEvaluation('${doc.id}')">Expire</button>` : ''}
+                                </div>
+                            </li>
+                        `;
+                    });
+                    list.innerHTML = items;
+                }
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.expireEvaluation = async (evalId) => {
+            if (!confirm("Are you sure you want to expire this evaluation?")) return;
+            const evalRef = doc(db, PUBLIC_EVALUATIONS_COLLECTION, evalId);
+            await updateDoc(evalRef, { status: 'Expired' });
+        }
+        
+        // --- Reporting ---
+        window.saveReport = async () => {
+            const content = document.getElementById('reportText').value.trim();
+            if(!content) return showCustomAlert("Report cannot be empty.");
+            try {
+                await addDoc(collection(db, PUBLIC_REPORTS_COLLECTION), {
+                    content: content,
+                    authorId: currentUserId,
+                    authorName: currentUserProfile.name,
+                    authorRole: currentUserProfile.role,
+                    createdAt: serverTimestamp(),
+                    editCount: 0
+                });
+                document.getElementById('reportText').value = '';
+                showCustomAlert("Report submitted successfully.");
+            } catch (error) {
+                console.error("Error saving report:", error);
+                showCustomAlert("Failed to submit report.");
+            }
+        };
+
+        function loadMyReports() {
+            const spinner = document.getElementById('myReportsSpinner');
+            const list = document.getElementById('reportList');
+            const noReports = document.getElementById('noMyReports');
+
+            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION), where("authorId", "==", currentUserId));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    list.innerHTML = '';
+                    noReports.classList.remove('hidden');
+                } else {
+                    noReports.classList.add('hidden');
+                    let items = '';
+                    snapshot.docs.sort((a,b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis()).forEach(doc => {
+                        const report = doc.data();
+                        items += `
+                            <li class="glass-effect p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-white/10" onclick="showReportModal('${doc.id}')">
+                                <div>
+                                    <p class="truncate">${report.content.substring(0, 80)}...</p>
+                                    <p class="text-xs text-gray-400">${new Date(report.createdAt.seconds * 1000).toLocaleString()}</p>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </li>
+                        `;
+                    });
+                    list.innerHTML = items;
+                }
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        function loadVisibleReports() {
+            const spinner = document.getElementById('allReportsSpinner');
+            const list = document.getElementById('visibleReports');
+            const noReports = document.getElementById('noVisibleReports');
+
+            // Everyone except EY can see reports.
+            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                spinner.classList.add('hidden');
+                if (snapshot.empty) {
+                    list.innerHTML = '';
+                    noReports.classList.remove('hidden');
+                } else {
+                    noReports.classList.add('hidden');
+                    let items = '';
+                     snapshot.docs.sort((a,b) => b.data().createdAt.toMillis() - a.data().createdAt.toMillis()).forEach(doc => {
+                        const report = doc.data();
+                        items += `
+                            <li class="glass-effect p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-white/10" onclick="showReportModal('${doc.id}')">
+                                <div>
+                                    <p class="truncate">${report.content.substring(0, 80)}...</p>
+                                    <p class="text-xs text-gray-400">By ${report.authorName} on ${new Date(report.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </li>
+                        `;
+                    });
+                    list.innerHTML = items;
+                }
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.showReportModal = async (reportId) => {
+            const reportRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+            const reportSnap = await getDoc(reportRef);
+            if (!reportSnap.exists()) return showCustomAlert("Report not found.");
+
+            const report = reportSnap.data();
+            const modal = document.getElementById('reportModal');
+            document.getElementById('reportAuthor').textContent = report.authorName;
+            document.getElementById('reportDate').textContent = new Date(report.createdAt.seconds * 1000).toLocaleString();
+            document.getElementById('reportModalTextarea').value = report.content;
+            
+            const editCountInfo = document.getElementById('editCountInfo');
+            const editButton = document.getElementById('editReportButton');
+            const saveButton = document.getElementById('saveEditedReportButton');
+            const textarea = document.getElementById('reportModalTextarea');
+
+            editCountInfo.textContent = `Edits used: ${report.editCount || 0} of 3.`;
+            
+            // Show edit button only if user is author and has edits left
+            if (report.authorId === currentUserId && (report.editCount || 0) < 3) {
+                editButton.classList.remove('hidden');
+            } else {
+                editButton.classList.add('hidden');
+            }
+            
+            saveButton.classList.add('hidden');
+            textarea.setAttribute('readonly', true);
+
+            editButton.onclick = () => {
+                textarea.removeAttribute('readonly');
+                textarea.focus();
+                editButton.classList.add('hidden');
+                saveButton.classList.remove('hidden');
+            };
+
+            saveButton.onclick = async () => {
+                const newContent = textarea.value.trim();
+                if (!newContent) return showCustomAlert("Report content cannot be empty.");
+                
+                await updateDoc(reportRef, {
+                    content: newContent,
+                    editCount: (report.editCount || 0) + 1
+                });
+                
+                showCustomAlert("Report updated.");
+                modal.classList.add('hidden');
+            };
+
+            modal.classList.remove('hidden');
+        };
+
+        // --- Forgot ID ---
+        window.showForgotPasswordModal = () => {
+            document.getElementById('forgotIdModal').classList.remove('hidden');
+            document.getElementById('forgotFirstName').value = '';
+            document.getElementById('forgotLastName').value = '';
+            document.getElementById('forgotIdChallenge').classList.add('hidden');
+        };
+
+        window.handleForgotIdSubmit = async () => {
+            const challengeDiv = document.getElementById('forgotIdChallenge');
+            
+            if (challengeDiv.classList.contains('hidden')) {
+                // Step 1: Find user and present challenge
+                const firstName = document.getElementById('forgotFirstName').value.trim();
+                const lastName = document.getElementById('forgotLastName').value.trim();
+                if (!firstName || !lastName) return showCustomAlert("Please enter both first and last name.");
+
+                try {
+                    const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("firstName", "==", firstName), where("lastName", "==", lastName));
+                    const snapshot = await getDocs(q);
+                    if (snapshot.empty) {
+                        return showCustomAlert("No user found with that name. For help, email jdwhelp@gmail.com.");
+                    }
+                    const user = snapshot.docs[0].data();
+                    
+                    // Pick a random user for the challenge (EI, TC, or RC)
+                    const challengeRoles = ['Early Youth Instructor', 'TC', 'RC'];
+                    const challengeQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "in", challengeRoles));
+                    const challengeUsersSnap = await getDocs(challengeQuery);
+                    if(challengeUsersSnap.empty) return showCustomAlert("Cannot create security challenge. Please contact support at jdwhelp@gmail.com.");
+
+                    const randomUser = challengeUsersSnap.docs[Math.floor(Math.random() * challengeUsersSnap.docs.length)].data();
+                    
+                    document.getElementById('challengeText').textContent = `To verify your identity, what is the role of: ${randomUser.name}?`;
+                    challengeDiv.dataset.correctRole = randomUser.role; // Store correct answer
+                    challengeDiv.dataset.userIdToReveal = user.mywhelpId; // Store ID to reveal
+                    challengeDiv.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error("Forgot ID Step 1 error:", error);
+                    showCustomAlert("An error occurred. Please try again.");
+                }
+
+            } else {
+                // Step 2: Verify challenge answer
+                const selectedRole = document.getElementById('challengeInput').value;
+                const correctRole = challengeDiv.dataset.correctRole;
+                const userIdToReveal = challengeDiv.dataset.userIdToReveal;
+
+                if (selectedRole === correctRole) {
+                    showCustomAlert(`Success! Your User ID is: ${userIdToReveal}`);
+                    document.getElementById('forgotIdModal').classList.add('hidden');
+                } else {
+                    showCustomAlert("Incorrect role. Please try again or email jdwhelp@gmail.com for assistance.");
                 }
             }
-        } catch (error) {
-            console.error("Error loading all attendance records:", error);
-            accordion.innerHTML = `<div class="text-danger text-center mt-3">Error loading records.</div>`;
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    }
+        };
 
+        // --- Global UI Helpers ---
+        window.showCustomAlert = (message) => {
+            document.getElementById('alertModalBody').textContent = message;
+            document.getElementById('alertModal').classList.remove('hidden');
+        };
 
-    // --- Evaluation Functions ---
-    // Loads all EY users for EI to evaluate
-    async function loadStudentsForEvaluation() {
-        const list = document.getElementById("evaluationList");
-        const spinner = document.getElementById("evaluationsStudentsSpinner");
-        const noEYUsersParagraph = document.getElementById("noEYUsers");
-        list.innerHTML = "";
-        spinner.classList.remove('hidden');
-        noEYUsersParagraph.classList.add('hidden');
+        window.showReturningUserForm = () => {
+            document.getElementById('user-type-selection').classList.add('hidden');
+            document.getElementById('returning-user-form').classList.remove('hidden');
+            document.getElementById('new-user-form').classList.add('hidden');
+            document.getElementById('login-intro-text').textContent = "Please enter your ID to log in.";
+        };
 
-        if (currentUser.role !== 'Early Youth Instructor') {
-            spinner.classList.add('hidden');
-            return;
-        }
+        window.showNewUserForm = () => {
+            document.getElementById('user-type-selection').classList.add('hidden');
+            document.getElementById('returning-user-form').classList.add('hidden');
+            document.getElementById('new-user-form').classList.remove('hidden');
+            document.getElementById('login-intro-text').textContent = "Please create your user profile.";
+        };
 
-        try {
-            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('role', '==', 'Early Youth'));
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                noEYUsersParagraph.classList.remove('hidden');
-            } else {
-                snapshot.forEach(doc => {
-                    const student = doc.data();
-                    const li = document.createElement("li");
-                    li.className = "list-group-item d-flex justify-content-between align-items-center";
-                    li.innerHTML = `
-                        <div class="me-3">
-                            <strong>${student.name}</strong><br>
-                            <small class="text-muted">${student.mywhelpId}</small>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <select id="eval-${student.uid}" class="form-select form-select-sm" style="width: auto;">
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good">Good</option>
-                                <option value="Needs Improvement">Needs Improvement</option>
-                            </select>
-                            <button class="btn btn-success btn-sm" onclick="saveEvaluation('${student.uid}')">
-                                <i class="fas fa-save"></i>
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(li);
-                });
-            }
-        } catch (error) {
-            console.error("Error loading students for evaluation:", error);
-            list.innerHTML = `<li class="list-group-item text-danger">Error loading students.</li>`;
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    }
-    
-    // Saves an evaluation for an EY user
-    window.saveEvaluation = async (studentUid) => {
-        const evaluation = document.getElementById(`eval-${studentUid}`).value;
-        if (!userId || !evaluation) {
-            showCustomAlert("You must be logged in and select an evaluation.");
-            return;
-        }
-        
-        try {
-            const evaluationData = {
-                evaluatedByUid: userId,
-                evaluatedByName: currentUser.name,
-                evaluatedForUid: studentUid,
-                evaluation: evaluation,
-                timestamp: new Date().toISOString(),
-                isExpired: false
-            };
-            
-            const evaluationsCollectionRef = collection(db, `artifacts/${appId}/public/data/evaluations`);
-            await addDoc(evaluationsCollectionRef, evaluationData);
-            
-            showCustomAlert("Evaluation saved successfully!");
-        } catch (error) {
-            console.error("Error saving evaluation:", error);
-            showCustomAlert("Failed to save evaluation.");
-        }
-    };
-    
-    // Loads evaluations for the logged-in EY user
-    async function loadMyEvaluations() {
-      const list = document.getElementById("myEvaluationsList");
-      const spinner = document.getElementById("myEvaluationsSpinner");
-      const noEvaluationsParagraph = document.getElementById("noMyEvaluations");
-      list.innerHTML = "";
-      spinner.classList.remove('hidden');
-      noEvaluationsParagraph.classList.add('hidden');
-
-      if (currentUser.role !== 'Early Youth' || !userId) {
-        spinner.classList.add('hidden');
-        return;
-      }
-
-      try {
-        const q = query(collection(db, `artifacts/${appId}/public/data/evaluations`), where('evaluatedForUid', '==', userId));
-        onSnapshot(q, (snapshot) => {
-          list.innerHTML = "";
-          if (snapshot.empty) {
-            noEvaluationsParagraph.classList.remove('hidden');
-            spinner.classList.add('hidden');
-          } else {
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const li = document.createElement("li");
-              li.className = "list-group-item";
-              const evalDate = new Date(data.timestamp).toLocaleString();
-              let statusClass = '';
-              let statusText = data.evaluation;
-              
-              if (data.isExpired) {
-                  statusClass = 'evaluation-select-expired';
-                  statusText = `${data.evaluation} (Expired)`;
-              } else if (data.evaluation === 'Excellent') {
-                  statusClass = 'evaluation-select-excellent';
-              } else if (data.evaluation === 'Good') {
-                  statusClass = 'evaluation-select-good';
-              } else if (data.evaluation === 'Needs Improvement') {
-                  statusClass = 'evaluation-select-needsimprovement';
-              }
-
-              li.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>Evaluation from ${data.evaluatedByName}</strong><br>
-                        <small class="text-muted">on ${evalDate}</small>
-                    </div>
-                    <span class="badge rounded-pill ${statusClass}">${statusText}</span>
-                </div>
-              `;
-              list.appendChild(li);
-            });
-            spinner.classList.add('hidden');
-          }
-        });
-      } catch (error) {
-        console.error("Error loading my evaluations:", error);
-        list.innerHTML = `<li class="list-group-item text-danger">Error loading evaluations.</li>`;
-        spinner.classList.add('hidden');
-      }
-    }
-    
-    // --- Reporting Functions ---
-    window.saveReport = async () => {
-      const text = document.getElementById("reportText").value.trim();
-      if (!text) {
-        showCustomAlert("Report cannot be empty.");
-        return;
-      }
-      if (!userId) {
-          showCustomAlert("Please log in to save a report.");
-          return;
-      }
-      
-      const allowedRoles = ['Early Youth Instructor', 'Early Youth Advisor', 'TC'];
-      if (!allowedRoles.includes(currentUser.role)) {
-          showCustomAlert("You do not have permission to write reports.");
-          return;
-      }
-
-      try {
-        const reportData = {
-          user: userId,
-          userName: currentUser.name,
-          role: currentUser.role,
-          content: text,
-          timestamp: new Date().toISOString(),
-          edits: 0
+        window.goBackToSelection = () => {
+            document.getElementById('user-type-selection').classList.remove('hidden');
+            document.getElementById('returning-user-form').classList.add('hidden');
+            document.getElementById('new-user-form').classList.add('hidden');
+            document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
         };
         
-        // Save reports to a public collection for visibility based on role
-        const reportsCollectionRef = collection(db, `artifacts/${appId}/public/data/reports`);
-        await addDoc(reportsCollectionRef, reportData);
+        // --- App Entry Point ---
+        document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
 
-        showCustomAlert("Report saved successfully!");
-        document.getElementById("reportText").value = "";
-        loadReports();
-        loadVisibleReports();
-      } catch (error) {
-        console.error("Error saving report:", error);
-        showCustomAlert("Failed to save report. Please try again.");
-      }
-    };
-
-    // Loads reports written by the current user
-    function loadReports() {
-      const list = document.getElementById("reportList");
-      const noReportsParagraph = document.getElementById("noMyReports");
-      const spinner = document.getElementById('myReportsSpinner');
-
-      list.innerHTML = "";
-      noReportsParagraph.classList.add('hidden');
-      spinner.classList.remove('hidden');
-
-      if (!userId || !['Early Youth Instructor', 'Early Youth Advisor', 'TC'].includes(currentUser.role)) { 
-        spinner.classList.add('hidden');
-        return; 
-      }
-
-      try {
-        const q = query(collection(db, `artifacts/${appId}/public/data/reports`), where("user", "==", userId));
-        onSnapshot(q, (snapshot) => {
-          list.innerHTML = "";
-          if (snapshot.empty) {
-              noReportsParagraph.classList.remove('hidden');
-              spinner.classList.add('hidden');
-          } else {
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const li = document.createElement("li");
-              li.className = "list-group-item d-flex justify-content-between align-items-center";
-              const reportDate = new Date(data.timestamp).toLocaleString();
-              
-              const isEditable = data.edits < 3;
-              const editButtonClass = isEditable ? 'btn-info' : 'btn-secondary disabled';
-              const editButtonText = isEditable ? `<i class="fas fa-edit"></i> Edit` : `<i class="fas fa-edit"></i> Max Edits`;
-
-              li.innerHTML = `
-                <div class="flex-grow-1 me-3">
-                  <small class="text-muted">On ${reportDate} (Edits: ${data.edits}/3)</small><br>
-                  <div class="report-content-preview">${data.content}</div>
-                </div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm ${editButtonClass}" onclick="showEditReportModal('${doc.id}', '${encodeURIComponent(data.content)}', ${data.edits})">
-                      ${editButtonText}
-                  </button>
-                  <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal" 
-                          data-report-id="${doc.id}"
-                          data-report-content="${encodeURIComponent(data.content)}"
-                          data-report-author="${data.userName}"
-                          data-report-date="${reportDate}"
-                          data-report-edits="${data.edits}">
-                      <i class="fas fa-expand-alt"></i>
-                  </button>
-                </div>
-              `;
-              list.appendChild(li);
-            });
-            spinner.classList.add('hidden');
-          }
-        });
-      } catch (error) {
-        console.error("Error loading user reports:", error);
-        list.innerHTML = `<li class="list-group-item text-danger">Error loading reports.</li>`;
-        spinner.classList.add('hidden');
-      }
-    }
-    
-    // Shows reports visible to the current user based on their role hierarchy
-    function loadVisibleReports() {
-      const list = document.getElementById("visibleReports");
-      const noVisibleReportsParagraph = document.getElementById("noVisibleReports");
-      const spinner = document.getElementById('allReportsSpinner');
-
-      list.innerHTML = "";
-      noVisibleReportsParagraph.classList.add('hidden');
-      spinner.classList.remove('hidden');
-
-      if (!userId || !['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role)) {
-        spinner.classList.add('hidden');
-        return;
-      }
-      
-      const viewMap = {
-        'RC': ['Early Youth Instructor', 'Early Youth Advisor', 'TC'],
-        'TC': ['Early Youth Instructor', 'Early Youth Advisor'],
-        'Early Youth Advisor': ['Early Youth Instructor'],
-        'Early Youth Instructor': ['Early Youth Instructor']
-      };
-      
-      const rolesToView = viewMap[currentUser.role] || [];
-      rolesToView.push(currentUser.role); // Always include reports from the current user's role
-
-      try {
-        const q = query(collection(db, `artifacts/${appId}/public/data/reports`), where('role', 'in', rolesToView));
-        onSnapshot(q, (snapshot) => {
-          const reports = [];
-          snapshot.forEach(doc => reports.push({...doc.data(), id: doc.id}));
-          reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-          list.innerHTML = "";
-          if (reports.length === 0) {
-            noVisibleReportsParagraph.classList.remove('hidden');
-          } else {
-            reports.forEach(data => {
-              const li = document.createElement("li");
-              li.className = "list-group-item d-flex justify-content-between align-items-center";
-              const reportDate = new Date(data.timestamp).toLocaleString();
-              li.innerHTML = `
-                <div class="flex-grow-1 me-3">
-                  <small class="text-muted">From ${data.userName} (${data.role}) on ${reportDate}</small><br>
-                  <div class="report-content-preview">${data.content}</div>
-                </div>
-                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal"
-                        data-report-id="${data.id}"
-                        data-report-content="${encodeURIComponent(data.content)}"
-                        data-report-author="${data.userName}"
-                        data-report-date="${reportDate}"
-                        data-report-edits="${data.edits}">
-                  <i class="fas fa-expand-alt"></i>
-                </button>
-              `;
-              list.appendChild(li);
-            });
-          }
-          spinner.classList.add('hidden');
-        });
-      } catch (error) {
-        console.error("Error loading visible reports:", error);
-        list.innerHTML = `<li class="list-group-item text-danger">Error loading reports.</li>`;
-        spinner.classList.add('hidden');
-      }
-    }
-
-    // Displays the full report modal
-    document.getElementById('reportModal').addEventListener('show.bs.modal', function (event) {
-      const button = event.relatedTarget;
-      const reportContent = decodeURIComponent(button.getAttribute('data-report-content'));
-      const reportId = button.getAttribute('data-report-id');
-      const reportAuthor = button.getAttribute('data-report-author');
-      const reportDate = button.getAttribute('data-report-date');
-      const reportEdits = button.getAttribute('data-report-edits');
-      
-      document.getElementById('reportModalTextarea').value = reportContent;
-      document.getElementById('reportModalTextarea').setAttribute('readonly', true);
-      document.getElementById('reportModalLabel').textContent = `Report by ${reportAuthor}`;
-      document.getElementById('reportAuthor').textContent = reportAuthor;
-      document.getElementById('reportDate').textContent = reportDate;
-      document.getElementById('editCountInfo').textContent = `Edits: ${reportEdits}/3`;
-
-      const editBtn = document.getElementById('editReportButton');
-      const saveBtn = document.getElementById('saveEditedReportButton');
-      
-      editBtn.classList.add('hidden');
-      saveBtn.classList.add('hidden');
-    });
-
-    // --- Personal Notes and To-do Lists (EY only) ---
-    function loadPersonalNotes() {
-      const list = document.getElementById("personalNotesList");
-      const spinner = document.getElementById("notesSpinner");
-      const noNotesParagraph = document.getElementById("noPersonalNotes");
-      list.innerHTML = "";
-      spinner.classList.remove('hidden');
-      noNotesParagraph.classList.add('hidden');
-      
-      if (currentUser.role !== 'Early Youth' || !userId) {
-        spinner.classList.add('hidden');
-        return;
-      }
-      
-      try {
-        const q = query(collection(db, `artifacts/${appId}/users/${userId}/personalNotes`));
-        onSnapshot(q, (snapshot) => {
-          list.innerHTML = "";
-          if (snapshot.empty) {
-            noNotesParagraph.classList.remove('hidden');
-            spinner.classList.add('hidden');
-          } else {
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const li = document.createElement("li");
-              li.className = "list-group-item d-flex justify-content-between align-items-start";
-              const noteDate = new Date(data.timestamp).toLocaleString();
-              li.innerHTML = `
-                <div class="flex-grow-1 me-3">
-                  <small class="text-muted">On ${noteDate}</small>
-                  <p class="mb-0 mt-1">${data.content}</p>
-                </div>
-                <button class="btn btn-sm btn-danger" onclick="deletePersonalNote('${doc.id}')">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              `;
-              list.appendChild(li);
-            });
-            spinner.classList.add('hidden');
-          }
-        });
-      } catch (error) {
-        console.error("Error loading personal notes:", error);
-        list.innerHTML = `<li class="list-group-item text-danger">Error loading notes.</li>`;
-        spinner.classList.add('hidden');
-      }
-    }
-    
-    window.savePersonalNote = async () => {
-      const noteTextarea = document.getElementById("personalNoteText");
-      const content = noteTextarea.value.trim();
-      if (!content) {
-        showCustomAlert("Note cannot be empty.");
-        return;
-      }
-      if (!userId || currentUser.role !== 'Early Youth') {
-        showCustomAlert("You do not have permission to save notes.");
-        return;
-      }
-      
-      try {
-        const noteData = {
-          content: content,
-          timestamp: new Date().toISOString()
-        };
-        await addDoc(collection(db, `artifacts/${appId}/users/${userId}/personalNotes`), noteData);
-        showCustomAlert("Note saved successfully!");
-        noteTextarea.value = "";
-      } catch (error) {
-        console.error("Error saving personal note:", error);
-        showCustomAlert("Failed to save note.");
-      }
-    };
-    
-    window.deletePersonalNote = async (noteId) => {
-      if (!userId || currentUser.role !== 'Early Youth') {
-        showCustomAlert("You do not have permission to delete notes.");
-        return;
-      }
-      
-      try {
-        await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/personalNotes`, noteId));
-        showCustomAlert("Note deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting personal note:", error);
-        showCustomAlert("Failed to delete note.");
-      }
-    };
-
-    function loadTodoItems() {
-      const list = document.getElementById("todoList");
-      const spinner = document.getElementById("todosSpinner");
-      const noTodosParagraph = document.getElementById("noTodos");
-      list.innerHTML = "";
-      spinner.classList.remove('hidden');
-      noTodosParagraph.classList.add('hidden');
-      
-      if (currentUser.role !== 'Early Youth' || !userId) {
-        spinner.classList.add('hidden');
-        return;
-      }
-      
-      try {
-        const q = query(collection(db, `artifacts/${appId}/users/${userId}/todoList`));
-        onSnapshot(q, (snapshot) => {
-          list.innerHTML = "";
-          if (snapshot.empty) {
-            noTodosParagraph.classList.remove('hidden');
-            spinner.classList.add('hidden');
-          } else {
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const li = document.createElement("li");
-              li.className = "list-group-item d-flex justify-content-between align-items-center";
-              li.innerHTML = `
-                <div class="flex-grow-1 list-item-content me-3">${data.task}</div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm btn-info" onclick="showEditTodoModal('${doc.id}', '${encodeURIComponent(data.task)}')">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteTodoItem('${doc.id}')">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              `;
-              list.appendChild(li);
-            });
-            spinner.classList.add('hidden');
-          }
-        });
-      } catch (error) {
-        console.error("Error loading to-do list:", error);
-        list.innerHTML = `<li class="list-group-item text-danger">Error loading to-do list.</li>`;
-        spinner.classList.add('hidden');
-      }
-    }
-    
-    window.addTodoItem = async () => {
-      const todoInput = document.getElementById("todoInput");
-      const task = todoInput.value.trim();
-      if (!task) {
-        showCustomAlert("To-do item cannot be empty.");
-        return;
-      }
-      if (!userId || currentUser.role !== 'Early Youth') {
-        showCustomAlert("You do not have permission to add to-do items.");
-        return;
-      }
-      
-      try {
-        const todoData = { task: task, timestamp: new Date().toISOString() };
-        await addDoc(collection(db, `artifacts/${appId}/users/${userId}/todoList`), todoData);
-        showCustomAlert("To-do item added!");
-        todoInput.value = "";
-      } catch (error) {
-        console.error("Error adding to-do item:", error);
-        showCustomAlert("Failed to add to-do item.");
-      }
-    };
-    
-    window.showEditTodoModal = (todoId, task) => {
-      const modal = new bootstrap.Modal(document.getElementById('editTodoModal'));
-      const editInput = document.getElementById('editTodoInput');
-      editInput.value = decodeURIComponent(task);
-      const saveButton = document.getElementById('saveTodoEditButton');
-      saveButton.onclick = () => saveTodoEdit(todoId);
-      modal.show();
-    };
-    
-    async function saveTodoEdit(todoId) {
-        const newText = document.getElementById('editTodoInput').value.trim();
-        if (!newText) {
-            showCustomAlert('To-do item cannot be empty.');
-            return;
-        }
-
-        if (!userId || currentUser.role !== 'Early Youth') {
-            showCustomAlert("You do not have permission to edit to-do items.");
-            return;
-        }
-
-        try {
-            await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/todoList`, todoId), { task: newText });
-            showCustomAlert('To-do item updated successfully!');
-            bootstrap.Modal.getInstance(document.getElementById('editTodoModal')).hide();
-        } catch (error) {
-            console.error("Error updating to-do item:", error);
-            showCustomAlert("Failed to update to-do item.");
-        }
-    }
-
-    window.deleteTodoItem = async (todoId) => {
-      if (!userId || currentUser.role !== 'Early Youth') {
-        showCustomAlert("You do not have permission to delete to-do items.");
-        return;
-      }
-      
-      try {
-        await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/todoList`, todoId));
-        showCustomAlert("To-do item deleted!");
-      } catch (error) {
-        console.error("Error deleting to-do item:", error);
-        showCustomAlert("Failed to delete to-do item.");
-      }
-    };
-    
-    // Run initialization on page load
-    window.addEventListener('DOMContentLoaded', initializeFirebase);
-  </script>
+    </script>
 </body>
 </html>
