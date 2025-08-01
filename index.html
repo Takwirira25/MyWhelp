@@ -64,8 +64,8 @@
     }
 
     .form-control option {
-        background-color: #2c0b4e; /* Darker background for dropdown options */
-        color: white;
+      background-color: #2c0b4e; /* Darker background for dropdown options */
+      color: white;
     }
 
     .btn {
@@ -86,6 +86,17 @@
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
 
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+    
     .btn-warning {
       background-color: #ffc107;
       border: none;
@@ -210,11 +221,35 @@
       color: white;
       padding: 15px;
       transition: all var(--transition-speed);
+      overflow-wrap: break-word;
     }
 
     .list-group-item:hover {
       background-color: rgba(255, 255, 255, 0.15);
       transform: translateX(5px);
+    }
+    
+    .list-group-item .report-content-preview {
+        max-height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        white-space: pre-wrap;
+    }
+
+    .list-group-item .list-item-content {
+      overflow-wrap: break-word;
+    }
+    
+    .list-group-item .list-item-content.overflow-hidden {
+        max-height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
 
     /* Styles for the status dropdowns in attendance table */
@@ -238,6 +273,10 @@
     .attendance-status-select.status-absent { background-color: #dc3545; border-color: #dc3545; }
     .attendance-status-select.status-late { background-color: #ffc107; color: #333; border-color: #ffc107; }
 
+    .evaluation-select-excellent { background-color: #28a745 !important; border-color: #28a745 !important; }
+    .evaluation-select-good { background-color: #0d6efd !important; border-color: #0d6efd !important; }
+    .evaluation-select-needsimprovement { background-color: #ffc107 !important; border-color: #ffc107 !important; }
+    .evaluation-select-expired { background-color: #6c757d !important; border-color: #6c757d !important; }
 
     textarea.form-control {
       min-height: 200px;
@@ -277,10 +316,13 @@
         <p class="text-center text-muted mb-4">Please enter your ID to log in.</p>
         <div class="input-group mb-3">
           <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-          <input type="text" id="userIDInput" placeholder="Enter your User ID (e.g., MW01)" class="form-control">
+          <input type="text" id="userIDInput" placeholder="Enter your User ID (e.g., EY123TD)" class="form-control">
         </div>
         <button id="login-button" class="btn btn-primary w-100" onclick="loginUser()">
           <i class="fas fa-sign-in-alt me-2"></i>Login
+        </button>
+        <button class="btn btn-secondary w-100 mt-2" onclick="showForgotPasswordModal()">
+          <i class="fas fa-question-circle me-2"></i>Forgot ID?
         </button>
         <button class="btn btn-secondary w-100 mt-2" onclick="goBackToSelection()">
           <i class="fas fa-arrow-left me-2"></i>Back
@@ -325,29 +367,45 @@
           <i class="fas fa-sign-out-alt me-2"></i>Logout
         </button>
       </div>
+      <small id="userIdDisplay" class="d-block text-muted mb-3"></small>
 
       <ul class="nav nav-tabs mb-3" id="menuTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <a class="nav-link active" id="attendance-tab" data-bs-toggle="tab" href="#attendance" role="tab" aria-controls="attendance" aria-selected="true">
-            <i class="fas fa-clipboard-check me-2"></i>Attendance
+        <li class="nav-item" role="presentation" id="myNotesTabLink">
+          <a class="nav-link active" id="mynotes-tab" data-bs-toggle="tab" href="#mynotes" role="tab" aria-controls="mynotes" aria-selected="true">
+            <i class="fas fa-sticky-note me-2"></i>Notes & To-dos
           </a>
         </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="myAttendance-tab" data-bs-toggle="tab" href="#myAttendance" role="tab" aria-controls="myAttendance" aria-selected="false">
-                <i class="fas fa-history me-2"></i>My Attendance
+        <li class="nav-item" role="presentation" id="attendanceTabLink">
+          <a class="nav-link" id="attendance-tab" data-bs-toggle="tab" href="#attendance" role="tab" aria-controls="attendance" aria-selected="false">
+            <i class="fas fa-clipboard-check me-2"></i>Take Attendance
+          </a>
+        </li>
+        <li class="nav-item" role="presentation" id="viewAttendanceTabLink">
+            <a class="nav-link" id="viewAttendance-tab" data-bs-toggle="tab" href="#viewAttendance" role="tab" aria-controls="viewAttendance" aria-selected="false">
+                <i class="fas fa-history me-2"></i>View Attendance
             </a>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="evaluationsTabLink">
+            <a class="nav-link" id="evaluations-tab" data-bs-toggle="tab" href="#evaluations" role="tab" aria-controls="evaluations" aria-selected="false">
+                <i class="fas fa-star me-2"></i>Evaluations
+            </a>
+        </li>
+        <li class="nav-item" role="presentation" id="myEvaluationsTabLink">
+            <a class="nav-link" id="myEvaluations-tab" data-bs-toggle="tab" href="#myEvaluations" role="tab" aria-controls="myEvaluations" aria-selected="false">
+                <i class="fas fa-certificate me-2"></i>My Evaluations
+            </a>
+        </li>
+        <li class="nav-item" role="presentation" id="reportingTabLink">
           <a class="nav-link" id="reporting-tab" data-bs-toggle="tab" href="#reporting" role="tab" aria-controls="reporting" aria-selected="false">
             <i class="fas fa-file-alt me-2"></i>Reporting
           </a>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="myReportsTabLink">
           <a class="nav-link" id="myReports-tab" data-bs-toggle="tab" href="#myReports" role="tab" aria-controls="myReports" aria-selected="false">
             <i class="fas fa-folder-open me-2"></i>My Reports
           </a>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" id="allReportsTabLink">
           <a class="nav-link" id="allReports-tab" data-bs-toggle="tab" href="#allReports" role="tab" aria-controls="allReports" aria-selected="false">
             <i class="fas fa-eye me-2"></i>View Reports
           </a>
@@ -355,11 +413,50 @@
       </ul>
 
       <div class="tab-content">
-        <div class="tab-pane fade show active" id="attendance" role="tabpanel" aria-labelledby="attendance-tab">
+        <!-- Tab for EY Notes & To-dos -->
+        <div class="tab-pane fade show active" id="mynotes" role="tabpanel" aria-labelledby="mynotes-tab">
+            <h4>Personal Notes</h4>
+            <textarea id="personalNoteText" class="form-control mb-3" rows="5" placeholder="Write your personal notes here..."></textarea>
+            <div class="d-flex justify-content-end mb-3">
+              <button class="btn btn-success" onclick="savePersonalNote()">
+                  <i class="fas fa-save me-2"></i>Save Note
+              </button>
+            </div>
+            <div id="notesSpinner" class="d-flex justify-content-center mt-5">
+              <div class="spinner-border" role="status">
+                  <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <ul id="personalNotesList" class="list-group"></ul>
+            <p id="noPersonalNotes" class="text-muted text-center mt-3 hidden">No notes found.</p>
+
+            <hr class="my-4">
+
+            <h4>To-do List</h4>
+            <div class="input-group mb-3">
+              <input type="text" id="todoInput" class="form-control" placeholder="Add a new to-do item...">
+              <button class="btn btn-success" type="button" onclick="addTodoItem()">Add</button>
+            </div>
+            <div id="todosSpinner" class="d-flex justify-content-center mt-5">
+              <div class="spinner-border" role="status">
+                  <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <ul id="todoList" class="list-group"></ul>
+            <p id="noTodos" class="text-muted text-center mt-3 hidden">No to-do items found.</p>
+        </div>
+
+        <!-- Tab for taking attendance (EI only) -->
+        <div class="tab-pane fade" id="attendance" role="tabpanel" aria-labelledby="attendance-tab">
           <h4>Take Attendance</h4>
           <div class="input-group mb-3">
             <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
             <input type="date" id="attendanceDate" class="form-control">
+          </div>
+          <div id="attendanceStudentsSpinner" class="d-flex justify-content-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="table text-white">
@@ -379,30 +476,44 @@
             </button>
           </div>
         </div>
-
-        <div class="tab-pane fade" id="myAttendance" role="tabpanel" aria-labelledby="myAttendance-tab">
-            <h4>My Saved Attendance Records</h4>
-            <div id="attendanceListSpinner" class="d-flex justify-content-center mt-5">
+        
+        <!-- Tab for viewing attendance (All except EY) -->
+        <div class="tab-pane fade" id="viewAttendance" role="tabpanel" aria-labelledby="viewAttendance-tab">
+            <h4>View All Attendance Records</h4>
+            <div id="attendanceViewSpinner" class="d-flex justify-content-center mt-5">
                 <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="table text-white">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="myAttendanceTable"></tbody>
-                </table>
-            </div>
-            <p id="noMyAttendance" class="text-muted text-center mt-3 hidden">No attendance records found.</p>
+            <div class="accordion" id="attendanceAccordion"></div>
+            <p id="noAttendanceRecords" class="text-muted text-center mt-3 hidden">No attendance records found.</p>
         </div>
 
+        <!-- Tab for EI to give evaluations to EY users -->
+        <div class="tab-pane fade" id="evaluations" role="tabpanel" aria-labelledby="evaluations-tab">
+          <h4>Give Evaluation to Early Youth</h4>
+          <div id="evaluationsStudentsSpinner" class="d-flex justify-content-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <ul id="evaluationList" class="list-group"></ul>
+          <p id="noEYUsers" class="text-muted text-center mt-3 hidden">No Early Youth users found.</p>
+        </div>
+
+        <!-- Tab for EY to see their own evaluations -->
+        <div class="tab-pane fade" id="myEvaluations" role="tabpanel" aria-labelledby="myEvaluations-tab">
+            <h4>My Evaluations</h4>
+            <div id="myEvaluationsSpinner" class="d-flex justify-content-center mt-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <ul id="myEvaluationsList" class="list-group"></ul>
+            <p id="noMyEvaluations" class="text-muted text-center mt-3 hidden">No evaluations found.</p>
+        </div>
+
+        <!-- Tab for writing a report -->
         <div class="tab-pane fade" id="reporting" role="tabpanel" aria-labelledby="reporting-tab">
           <h4>Write Report</h4>
           <textarea id="reportText" class="form-control mb-3" rows="10" placeholder="Write your report here..."></textarea>
@@ -411,14 +522,26 @@
           </button>
         </div>
 
+        <!-- Tab for viewing my own reports -->
         <div class="tab-pane fade" id="myReports" role="tabpanel" aria-labelledby="myReports-tab">
           <h4>My Saved Reports</h4>
+          <div id="myReportsSpinner" class="d-flex justify-content-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
           <ul id="reportList" class="list-group"></ul>
           <p id="noMyReports" class="text-muted text-center mt-3 hidden">No reports found.</p>
         </div>
 
+        <!-- Tab for viewing all reports (based on hierarchy) -->
         <div class="tab-pane fade" id="allReports" role="tabpanel" aria-labelledby="allReports-tab">
           <h4>All Reports You Can View</h4>
+          <div id="allReportsSpinner" class="d-flex justify-content-center mt-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
           <ul id="visibleReports" class="list-group"></ul>
           <p id="noVisibleReports" class="text-muted text-center mt-3 hidden">No reports available to view.</p>
         </div>
@@ -444,42 +567,153 @@
     </div>
   </div>
 
-  <!-- Modal for viewing full reports -->
+  <!-- Modal for viewing/editing reports -->
   <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-          <h5 class="modal-title" id="reportModalLabel">Full Report</h5>
+          <h5 class="modal-title" id="reportModalLabel">Report Details</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
         </div>
-        <div class="modal-body" id="reportModalBody">
-          <!-- Report content will be loaded here -->
+        <div class="modal-body">
+            <p class="text-muted">Author: <span id="reportAuthor"></span></p>
+            <p class="text-muted">Date: <span id="reportDate"></span></p>
+            <p id="editCountInfo" class="text-muted"></p>
+            <textarea id="reportModalTextarea" class="form-control mb-3" rows="10" readonly></textarea>
         </div>
         <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
+          <button id="editReportButton" type="button" class="btn btn-info hidden">Edit</button>
+          <button id="saveEditedReportButton" type="button" class="btn btn-success hidden">Save</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
   </div>
+  
+  <!-- Modal for forgot ID recovery -->
+  <div class="modal fade" id="forgotIdModal" tabindex="-1" aria-labelledby="forgotIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <h5 class="modal-title" id="forgotIdModalLabel">Forgot My ID</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <p>Please enter your first and last name to recover your ID.</p>
+          <div class="input-group mb-3">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" id="forgotFirstName" placeholder="First Name" class="form-control">
+          </div>
+          <div class="input-group mb-3">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" id="forgotLastName" placeholder="Last Name" class="form-control">
+          </div>
+          <div id="forgotIdChallenge" class="hidden">
+            <p id="challengeText"></p>
+            <input type="text" id="challengeInput" class="form-control" placeholder="Enter the matched role">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
+          <button id="submitForgotId" type="button" class="btn btn-primary">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Modal for editing a to-do item -->
+  <div class="modal fade" id="editTodoModal" tabindex="-1" aria-labelledby="editTodoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+          <h5 class="modal-title" id="editTodoModalLabel">Edit To-do Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="editTodoInput" class="form-control">
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
+          <button type="button" class="btn btn-success" id="saveTodoEditButton">Save</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where, getDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    // Import required Firebase modules from v11.6.1
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
-      authDomain: "samrad-quiz.firebaseapp.com",
-      projectId: "samrad-quiz",
-      storageBucket: "samrad-quiz.firebasestorage.app",
-      messagingSenderId: "853162839858",
-      appId: "1:853162839858:web:9eb0fde5b5a442a067d12b"
+    // Global variables provided by the environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    
+    const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
+
+    // Initialize Firebase services
+    let app, auth, db;
+    let userId;
+
+    let currentUser = {
+      id: null,
+      name: null,
+      role: null
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // --- Firebase & Auth Initialization ---
+    async function initializeFirebase() {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            userId = user.uid;
+            console.log("Firebase Auth State Changed. User ID:", userId);
+            
+            // Check if user exists in our mywhelp_users collection
+            const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
+            const userDocSnap = await getDoc(userDocRef);
+            
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              currentUser = {
+                id: userData.mywhelpId,
+                name: userData.name,
+                role: userData.role
+              };
+              showMainContent();
+            } else {
+              // User is authenticated but doesn't have a profile yet (e.g., just registered).
+              showLoginContent();
+            }
+          } else {
+            console.log("No user signed in.");
+            userId = null;
+            currentUser = { id: null, name: null, role: null };
+            showLoginContent();
+          }
+        });
 
-    let currentUser = {};
+        // Sign in with the custom token if available, otherwise sign in anonymously
+        if (initialAuthToken) {
+          await signInWithCustomToken(auth, initialAuthToken);
+          console.log("Signed in with custom token.");
+        } else {
+          await signInAnonymously(auth);
+          console.log("Signed in anonymously.");
+        }
+      } catch (error) {
+        console.error("Error initializing Firebase:", error);
+        showCustomAlert("Failed to initialize the application. Please try again.");
+      }
+    }
 
+    // --- UI/UX Functions ---
     // Utility function to show custom modal alerts
     function showCustomAlert(message) {
       const modal = new bootstrap.Modal(document.getElementById('alertModal'));
@@ -487,7 +721,6 @@
       modal.show();
     }
 
-    // Function to handle switching between forms
     window.showReturningUserForm = () => {
       document.getElementById('user-type-selection').classList.add('hidden');
       document.getElementById('returning-user-form').classList.remove('hidden');
@@ -509,52 +742,74 @@
       document.getElementById('user-type-selection').classList.remove('hidden');
       document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
     };
-
+    
+    // Function to handle login with the custom 'mywhelpId'
     window.loginUser = async () => {
-      const userID = document.getElementById("userIDInput").value.trim();
-      if (!userID) {
+      const mywhelpId = document.getElementById("userIDInput").value.trim();
+      if (!mywhelpId) {
         showCustomAlert("Please enter a User ID.");
         return;
       }
       
-      const userDocRef = doc(db, 'mywhelp_users', userID);
-      const userDocSnap = await getDoc(userDocRef);
+      try {
+        // Query the database for the user with the given mywhelpId
+        const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
+        const q = query(usersRef, where('mywhelpId', '==', mywhelpId));
+        const querySnapshot = await getDocs(q);
 
-      if (userDocSnap.exists()) {
-          const userData = userDocSnap.data();
-          currentUser = { id: userID, name: userData.name, role: userData.role };
-          showMainContent();
-      } else {
+        if (querySnapshot.empty) {
           showCustomAlert("ID not found. Please go back and select 'I'm a New User' to register.");
+        } else {
+          const userDoc = querySnapshot.docs[0];
+          const userData = userDoc.data();
+          
+          // The code now relies on the onAuthStateChanged listener to handle the state.
+          // This ensures the main content only loads after a successful authentication,
+          // which happens on page load via the custom token or anonymously.
+          // We just need to ensure the user exists, which this check confirms.
+          showMainContent();
+        }
+      } catch (error) {
+        console.error("Error during login:", error);
+        showCustomAlert("An error occurred during login. Please try again.");
       }
     };
 
-    // Helper function to generate a unique ID
-    async function generateUniqueId(firstName, lastName) {
-        let initials = '';
-        if (firstName) {
-            initials += firstName.charAt(0).toUpperCase();
-        }
-        if (lastName) {
-            initials += lastName.charAt(0).toUpperCase();
-        } else if (firstName) {
-            initials += firstName.charAt(0).toUpperCase(); // Use first initial twice if no last name
-        } else {
-            initials = 'XX'; // Default if no name
-        }
+    // Helper function to generate a unique ID based on role and initials
+    async function generateUniqueMywhelpId(firstName, lastName, role) {
+      let initials = '';
+      if (firstName) {
+        initials += firstName.charAt(0).toUpperCase();
+      }
+      if (lastName) {
+        initials += lastName.charAt(0).toUpperCase();
+      }
+      
+      const rolePrefixMap = {
+          "Early Youth": "EY",
+          "Early Youth Instructor": "EI",
+          "Early Youth Advisor": "EA",
+          "TC": "TC",
+          "RC": "RC"
+      };
+      const prefix = rolePrefixMap[role] || 'MW';
 
-        let newId = '';
-        let isUnique = false;
-        while (!isUnique) {
-            const randomNumber = Math.floor(100 + Math.random() * 900); // Generate a random 3-digit number
-            newId = `MW${randomNumber}${initials}`;
-            const userDocRef = doc(db, 'mywhelp_users', newId);
-            const userDocSnap = await getDoc(userDocRef);
-            if (!userDocSnap.exists()) {
-                isUnique = true;
-            }
+      let newId = '';
+      let isUnique = false;
+      while (!isUnique) {
+        const randomNumber = Math.floor(100 + Math.random() * 900);
+        newId = `${prefix}${randomNumber}${initials.padEnd(2, 'X').slice(0, 2)}`;
+        
+        // Query to check for existing mywhelpId
+        const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
+        const q = query(usersRef, where('mywhelpId', '==', newId));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+          isUnique = true;
         }
-        return newId;
+      }
+      return newId;
     }
 
     window.registerUser = async () => {
@@ -563,17 +818,34 @@
       const userRole = document.getElementById("userRole").value;
       const userName = `${firstName} ${lastName}`.trim();
 
-      if (!firstName) {
-        showCustomAlert("Please enter your First Name to register.");
+      if (!firstName || !lastName) {
+        showCustomAlert("Please enter both your First Name and Last Name to register.");
         return;
       }
-
-      const newUserID = await generateUniqueId(firstName, lastName);
       
-      currentUser = { id: newUserID, name: userName, role: userRole };
+      if (!userId) {
+          showCustomAlert("Authentication failed. Please refresh the page and try again.");
+          return;
+      }
+
+      const mywhelpId = await generateUniqueMywhelpId(firstName, lastName, userRole);
+      
+      const newUser = {
+        mywhelpId: mywhelpId,
+        name: userName,
+        role: userRole,
+        uid: userId
+      };
+
       try {
-        await setDoc(doc(db, 'mywhelp_users', newUserID), currentUser);
-        showCustomAlert(`Welcome! Your account has been created. Your unique ID is: ${newUserID}`);
+        // Use the Firebase UID as the document ID for the user profile
+        await setDoc(doc(db, PUBLIC_USERS_COLLECTION, userId), newUser);
+        currentUser = {
+          id: mywhelpId,
+          name: userName,
+          role: userRole
+        };
+        showCustomAlert(`Welcome! Your account has been created. Your unique ID is: ${mywhelpId}`);
         showMainContent();
       } catch (error) {
         console.error("Error creating user:", error);
@@ -581,6 +853,17 @@
       }
     };
     
+    // Shows the login/registration interface
+    function showLoginContent() {
+      document.getElementById("main-content").classList.add("hidden");
+      document.getElementById("login-card").classList.remove("hidden");
+      document.getElementById('returning-user-form').classList.add('hidden');
+      document.getElementById('new-user-form').classList.add('hidden');
+      document.getElementById('user-type-selection').classList.remove('hidden');
+      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+    }
+
+    // Shows the main application interface
     function showMainContent() {
       document.getElementById("login-card").classList.add("hidden");
       document.getElementById("main-content").classList.remove("hidden");
@@ -597,64 +880,165 @@
           greeting = `Greetings Brethren, ${currentUser.name}`;
       }
       document.getElementById("welcomeText").textContent = greeting;
+      document.getElementById("userIdDisplay").textContent = `Logged in as: ${currentUser.id} (UID: ${userId})`;
 
-      generateAttendanceTable();
-      loadReports();
-      loadVisibleReports();
-      loadMyAttendance();
+      // Hide or show tabs based on user role
+      const isEarlyYouth = currentUser.role === 'Early Youth';
+      const isEarlyYouthInstructor = currentUser.role === 'Early Youth Instructor';
+      const canWriteReport = ['Early Youth Instructor', 'Early Youth Advisor', 'TC'].includes(currentUser.role);
+      const canViewAllReports = ['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role);
+      const canViewAllAttendance = ['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role);
+
+      document.getElementById('myNotesTabLink').classList.toggle('hidden', !isEarlyYouth);
+      document.getElementById('myEvaluationsTabLink').classList.toggle('hidden', !isEarlyYouth);
+      document.getElementById('attendanceTabLink').classList.toggle('hidden', !isEarlyYouthInstructor);
+      document.getElementById('evaluationsTabLink').classList.toggle('hidden', !isEarlyYouthInstructor);
+      document.getElementById('reportingTabLink').classList.toggle('hidden', !canWriteReport);
+      document.getElementById('myReportsTabLink').classList.toggle('hidden', !canWriteReport);
+      document.getElementById('allReportsTabLink').classList.toggle('hidden', !canViewAllReports);
+      document.getElementById('viewAttendanceTabLink').classList.toggle('hidden', !canViewAllAttendance);
+
+      // Reload data for all relevant tabs
+      if (isEarlyYouth) {
+        loadPersonalNotes();
+        loadTodoItems();
+        loadMyEvaluations();
+      }
+      if (isEarlyYouthInstructor) {
+        generateAttendanceTable();
+        loadStudentsForEvaluation();
+      }
+      if (canViewAllAttendance) {
+        loadAllAttendance();
+      }
+      if (canWriteReport) {
+        loadReports();
+      }
+      if (canViewAllReports) {
+        loadVisibleReports();
+      }
     }
 
-    window.logout = () => {
-      currentUser = {};
-      document.getElementById("main-content").classList.add("hidden");
-      document.getElementById("login-card").classList.remove("hidden");
-      document.getElementById('returning-user-form').classList.add('hidden');
-      document.getElementById('new-user-form').classList.add('hidden');
-      document.getElementById('user-type-selection').classList.remove('hidden');
-      document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+    window.logout = async () => {
+      try {
+        await signOut(auth);
+        showLoginContent();
+      } catch (error) {
+        console.error("Error during logout:", error);
+        showCustomAlert("Failed to log out. Please try again.");
+      }
+    };
+    
+    // --- Forgot ID Functionality ---
+    window.showForgotPasswordModal = () => {
+      const modal = new bootstrap.Modal(document.getElementById('forgotIdModal'));
+      document.getElementById('forgotFirstName').value = '';
+      document.getElementById('forgotLastName').value = '';
+      document.getElementById('forgotIdChallenge').classList.add('hidden');
+      modal.show();
+    };
+    
+    window.submitForgotId = async () => {
+      const firstName = document.getElementById('forgotFirstName').value.trim();
+      const lastName = document.getElementById('forgotLastName').value.trim();
       
-      document.getElementById("myAttendanceTable").innerHTML = "";
-      document.getElementById("reportList").innerHTML = "";
-      document.getElementById("visibleReports").innerHTML = "";
+      if (!firstName || !lastName) {
+        showCustomAlert('Please enter both first and last name.');
+        return;
+      }
+      
+      try {
+        const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('name', '==', `${firstName} ${lastName}`));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          showCustomAlert('User not found. Please check your name or contact support at jdwhelp@gmail.com.');
+          return;
+        }
+        
+        // Find a random EI, RC, or TC user for the challenge
+        const rolesForChallenge = ['Early Youth Instructor', 'Regional Coordinator (RC)', 'Territorial Coordinator (TC)'];
+        const challengeUsersSnapshot = await getDocs(query(collection(db, PUBLIC_USERS_COLLECTION), where('role', 'in', rolesForChallenge)));
+        const challengeUsers = challengeUsersSnapshot.docs.map(doc => doc.data());
+        const randomChallengeUser = challengeUsers[Math.floor(Math.random() * challengeUsers.length)];
+        
+        if (!randomChallengeUser) {
+            showCustomAlert('Cannot perform ID recovery at this time. Please contact support.');
+            return;
+        }
+
+        const challengeDiv = document.getElementById('forgotIdChallenge');
+        document.getElementById('challengeText').textContent = `Match the role for Brethren ${randomChallengeUser.name}. Enter their role prefix (e.g., EI, RC, or TC).`;
+        challengeDiv.classList.remove('hidden');
+        
+        document.getElementById('submitForgotId').onclick = async () => {
+          const challengeAnswer = document.getElementById('challengeInput').value.trim().toUpperCase();
+          const correctPrefix = randomChallengeUser.mywhelpId.substring(0, 2);
+          
+          if (challengeAnswer === correctPrefix) {
+            const userDoc = snapshot.docs[0];
+            const userData = userDoc.data();
+            showCustomAlert(`Match successful! Your ID is: ${userData.mywhelpId}`);
+            document.getElementById('forgotIdModal').querySelector('.btn-close').click(); // Close modal
+          } else {
+            showCustomAlert('Match failed. Please contact Brethren John Doe at jdwhelp@gmail.com to retrieve your ID.');
+          }
+        };
+
+      } catch (error) {
+        console.error("Error in forgot ID logic:", error);
+        showCustomAlert('An error occurred. Please try again.');
+      }
     };
 
-    function generateAttendanceTable() {
+    // --- Attendance Functions ---
+    // Generates the attendance table with all EY users
+    async function generateAttendanceTable() {
       const tableBody = document.getElementById("attendanceTable");
+      const spinner = document.getElementById('attendanceStudentsSpinner');
       tableBody.innerHTML = "";
-      
-      const students = [
-        { id: 'MW01', name: 'Student 1' }, { id: 'MW02', name: 'Student 2' },
-        { id: 'MW03', name: 'Student 3' }, { id: 'MW04', name: 'Student 4' },
-        { id: 'MW05', name: 'Student 5' }, { id: 'MW06', name: 'Student 6' },
-        { id: 'MW07', name: 'Student 7' }, { id: 'MW08', name: 'Student 8' },
-        { id: 'MW09', name: 'Student 9' }, { id: 'MW10', name: 'Student 10' },
-        { id: 'MW11', name: 'Student 11' }, { id: 'MW12', name: 'Student 12' },
-        { id: 'MW13', name: 'Student 13' }, { id: 'MW14', name: 'Student 14' },
-        { id: 'MW15', name: 'Student 15' }, { id: 'MW16', name: 'Student 16' },
-        { id: 'MW17', name: 'Student 17' }, { id: 'MW18', name: 'Student 18' },
-        { id: 'MW19', name: 'Student 19' }, { id: 'MW20', name: 'Student 20' }
-      ];
+      spinner.classList.remove('hidden');
 
-      students.forEach(student => {
-        const row = tableBody.insertRow();
-        row.innerHTML = `
-          <td>${student.id}</td>
-          <td>${student.name}</td>
-          <td>
-            <select class="form-select form-select-sm attendance-status-select">
-              <option value="Present">Present</option>
-              <option value="Absent">Absent</option>
-              <option value="Late">Late</option>
-            </select>
-          </td>
-        `;
-        const selectElement = row.cells[2].querySelector("select");
-        selectElement.classList.add(`status-present`);
-        selectElement.addEventListener('change', function() {
-            this.classList.remove('status-present', 'status-absent', 'status-late');
-            this.classList.add(`status-${this.value.toLowerCase()}`);
-        });
-      });
+      if (!userId) {
+          spinner.classList.add('hidden');
+          return;
+      }
+      
+      try {
+          const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('role', '==', 'Early Youth'));
+          const snapshot = await getDocs(q);
+
+          if (snapshot.empty) {
+              tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No Early Youth users found.</td></tr>`;
+          } else {
+              snapshot.forEach(doc => {
+                  const student = doc.data();
+                  const row = tableBody.insertRow();
+                  row.innerHTML = `
+                      <td>${student.mywhelpId}</td>
+                      <td>${student.name}</td>
+                      <td>
+                          <select class="form-select form-select-sm attendance-status-select">
+                              <option value="Present">Present</option>
+                              <option value="Absent">Absent</option>
+                              <option value="Late">Late</option>
+                          </select>
+                      </td>
+                  `;
+                  const selectElement = row.cells[2].querySelector("select");
+                  selectElement.classList.add(`status-present`);
+                  selectElement.addEventListener('change', function() {
+                      this.classList.remove('status-present', 'status-absent', 'status-late');
+                      this.classList.add(`status-${this.value.toLowerCase()}`);
+                  });
+              });
+          }
+      } catch (error) {
+          console.error("Error generating attendance table:", error);
+          tableBody.innerHTML = `<tr><td colspan="3" class="text-danger text-center">Error loading students.</td></tr>`;
+      } finally {
+          spinner.classList.add('hidden');
+      }
     }
 
     window.saveAttendance = async () => {
@@ -663,12 +1047,16 @@
           showCustomAlert("Please select a date for attendance.");
           return;
       }
-      if (!currentUser.id) {
+      if (!userId) {
           showCustomAlert("Please log in to save attendance.");
           return;
       }
 
       const rows = document.querySelectorAll("#attendanceTable tr");
+      if (rows.length === 0 || rows[0].cells.length === 1) { // Check for "No users found" message
+        showCustomAlert("No student records to save.");
+        return;
+      }
       const attendanceRecords = [];
 
       for (let i = 0; i < rows.length; i++) {
@@ -678,86 +1066,285 @@
         const statusSelect = row.cells[2].querySelector("select");
         const status = statusSelect.value;
 
-        attendanceRecords.push({ date, id, name, status, takenBy: currentUser.id });
-      }
-
-      if (attendanceRecords.length === 0) {
-          showCustomAlert("No student records to save.");
-          return;
+        attendanceRecords.push({ date, studentId: id, studentName: name, status, takenBy: userId, takenByName: currentUser.name });
       }
 
       try {
+        const attendanceCollectionRef = collection(db, `artifacts/${appId}/public/data/attendance`);
         for (const record of attendanceRecords) {
-          await addDoc(collection(db, "mywhelp_attendance"), record);
+          await addDoc(attendanceCollectionRef, record);
         }
         showCustomAlert("Attendance saved successfully!");
-        generateAttendanceTable(); 
-        loadMyAttendance();
+        generateAttendanceTable();
+        loadAllAttendance();
       } catch (error) {
         console.error("Error saving attendance:", error);
         showCustomAlert("Failed to save attendance. Please try again.");
       }
     };
+    
+    // Loads all attendance records for non-EY users
+    async function loadAllAttendance() {
+        const accordion = document.getElementById("attendanceAccordion");
+        const noRecordsParagraph = document.getElementById("noAttendanceRecords");
+        const spinner = document.getElementById("attendanceViewSpinner");
 
-    async function loadMyAttendance() {
-        const tableBody = document.getElementById("myAttendanceTable");
-        const noRecordsParagraph = document.getElementById("noMyAttendance");
-        const spinner = document.getElementById("attendanceListSpinner");
-
-        tableBody.innerHTML = "";
+        accordion.innerHTML = "";
         noRecordsParagraph.classList.add('hidden');
         spinner.classList.remove('hidden');
-        
-        if (!currentUser.id) {
+
+        if (!userId || currentUser.role === 'Early Youth') {
             spinner.classList.add('hidden');
             return;
         }
 
         try {
-            const q = query(collection(db, "mywhelp_attendance"), where("takenBy", "==", currentUser.id));
+            const q = query(collection(db, `artifacts/${appId}/public/data/attendance`));
             const snapshot = await getDocs(q);
-            
+
             if (snapshot.empty) {
                 noRecordsParagraph.classList.remove('hidden');
             } else {
+                // Group records by date
+                const recordsByDate = {};
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const row = tableBody.insertRow();
-                    const statusClass = `status-${data.status.toLowerCase()}`;
-                    row.innerHTML = `
-                        <td>${data.date}</td>
-                        <td>${data.id}</td>
-                        <td>${data.name}</td>
-                        <td><span class="badge ${statusClass}">${data.status}</span></td>
-                    `;
+                    if (!recordsByDate[data.date]) {
+                        recordsByDate[data.date] = [];
+                    }
+                    recordsByDate[data.date].push(data);
                 });
+                
+                const sortedDates = Object.keys(recordsByDate).sort((a, b) => new Date(b) - new Date(a));
+
+                // Create an accordion item for each date
+                for (const date of sortedDates) {
+                    const accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+                    
+                    const headerId = `heading-${date}`;
+                    const collapseId = `collapse-${date}`;
+                    
+                    accordionItem.innerHTML = `
+                        <h2 class="accordion-header" id="${headerId}">
+                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}" style="background-color: rgba(255, 255, 255, 0.1); color: white;">
+                            Attendance on ${date}
+                          </button>
+                        </h2>
+                        <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#attendanceAccordion">
+                          <div class="accordion-body" style="background-color: rgba(255, 255, 255, 0.05);">
+                            <table class="table text-white">
+                              <thead>
+                                <tr>
+                                  <th>ID</th>
+                                  <th>Name</th>
+                                  <th>Status</th>
+                                  <th>Taken By</th>
+                                </tr>
+                              </thead>
+                              <tbody id="attendanceTable-${date}"></tbody>
+                            </table>
+                          </div>
+                        </div>
+                    `;
+                    accordion.appendChild(accordionItem);
+
+                    const tableBody = accordionItem.querySelector(`#attendanceTable-${date}`);
+                    recordsByDate[date].forEach(record => {
+                        const row = tableBody.insertRow();
+                        const statusClass = `status-${record.status.toLowerCase()}`;
+                        row.innerHTML = `
+                            <td>${record.studentId}</td>
+                            <td>${record.studentName}</td>
+                            <td><span class="badge rounded-pill ${statusClass}">${record.status}</span></td>
+                            <td>${record.takenByName}</td>
+                        `;
+                    });
+                }
             }
         } catch (error) {
-            console.error("Error loading my attendance records:", error);
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Error loading records.</td></tr>`;
+            console.error("Error loading all attendance records:", error);
+            accordion.innerHTML = `<div class="text-danger text-center mt-3">Error loading records.</div>`;
         } finally {
             spinner.classList.add('hidden');
         }
     }
 
+
+    // --- Evaluation Functions ---
+    // Loads all EY users for EI to evaluate
+    async function loadStudentsForEvaluation() {
+        const list = document.getElementById("evaluationList");
+        const spinner = document.getElementById("evaluationsStudentsSpinner");
+        const noEYUsersParagraph = document.getElementById("noEYUsers");
+        list.innerHTML = "";
+        spinner.classList.remove('hidden');
+        noEYUsersParagraph.classList.add('hidden');
+
+        if (currentUser.role !== 'Early Youth Instructor') {
+            spinner.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where('role', '==', 'Early Youth'));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                noEYUsersParagraph.classList.remove('hidden');
+            } else {
+                snapshot.forEach(doc => {
+                    const student = doc.data();
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex justify-content-between align-items-center";
+                    li.innerHTML = `
+                        <div class="me-3">
+                            <strong>${student.name}</strong><br>
+                            <small class="text-muted">${student.mywhelpId}</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="eval-${student.uid}" class="form-select form-select-sm" style="width: auto;">
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Needs Improvement">Needs Improvement</option>
+                            </select>
+                            <button class="btn btn-success btn-sm" onclick="saveEvaluation('${student.uid}')">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            }
+        } catch (error) {
+            console.error("Error loading students for evaluation:", error);
+            list.innerHTML = `<li class="list-group-item text-danger">Error loading students.</li>`;
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    }
+    
+    // Saves an evaluation for an EY user
+    window.saveEvaluation = async (studentUid) => {
+        const evaluation = document.getElementById(`eval-${studentUid}`).value;
+        if (!userId || !evaluation) {
+            showCustomAlert("You must be logged in and select an evaluation.");
+            return;
+        }
+        
+        try {
+            const evaluationData = {
+                evaluatedByUid: userId,
+                evaluatedByName: currentUser.name,
+                evaluatedForUid: studentUid,
+                evaluation: evaluation,
+                timestamp: new Date().toISOString(),
+                isExpired: false
+            };
+            
+            const evaluationsCollectionRef = collection(db, `artifacts/${appId}/public/data/evaluations`);
+            await addDoc(evaluationsCollectionRef, evaluationData);
+            
+            showCustomAlert("Evaluation saved successfully!");
+        } catch (error) {
+            console.error("Error saving evaluation:", error);
+            showCustomAlert("Failed to save evaluation.");
+        }
+    };
+    
+    // Loads evaluations for the logged-in EY user
+    async function loadMyEvaluations() {
+      const list = document.getElementById("myEvaluationsList");
+      const spinner = document.getElementById("myEvaluationsSpinner");
+      const noEvaluationsParagraph = document.getElementById("noMyEvaluations");
+      list.innerHTML = "";
+      spinner.classList.remove('hidden');
+      noEvaluationsParagraph.classList.add('hidden');
+
+      if (currentUser.role !== 'Early Youth' || !userId) {
+        spinner.classList.add('hidden');
+        return;
+      }
+
+      try {
+        const q = query(collection(db, `artifacts/${appId}/public/data/evaluations`), where('evaluatedForUid', '==', userId));
+        onSnapshot(q, (snapshot) => {
+          list.innerHTML = "";
+          if (snapshot.empty) {
+            noEvaluationsParagraph.classList.remove('hidden');
+            spinner.classList.add('hidden');
+          } else {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const li = document.createElement("li");
+              li.className = "list-group-item";
+              const evalDate = new Date(data.timestamp).toLocaleString();
+              let statusClass = '';
+              let statusText = data.evaluation;
+              
+              if (data.isExpired) {
+                  statusClass = 'evaluation-select-expired';
+                  statusText = `${data.evaluation} (Expired)`;
+              } else if (data.evaluation === 'Excellent') {
+                  statusClass = 'evaluation-select-excellent';
+              } else if (data.evaluation === 'Good') {
+                  statusClass = 'evaluation-select-good';
+              } else if (data.evaluation === 'Needs Improvement') {
+                  statusClass = 'evaluation-select-needsimprovement';
+              }
+
+              li.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Evaluation from ${data.evaluatedByName}</strong><br>
+                        <small class="text-muted">on ${evalDate}</small>
+                    </div>
+                    <span class="badge rounded-pill ${statusClass}">${statusText}</span>
+                </div>
+              `;
+              list.appendChild(li);
+            });
+            spinner.classList.add('hidden');
+          }
+        });
+      } catch (error) {
+        console.error("Error loading my evaluations:", error);
+        list.innerHTML = `<li class="list-group-item text-danger">Error loading evaluations.</li>`;
+        spinner.classList.add('hidden');
+      }
+    }
+    
+    // --- Reporting Functions ---
     window.saveReport = async () => {
       const text = document.getElementById("reportText").value.trim();
       if (!text) {
         showCustomAlert("Report cannot be empty.");
         return;
       }
-      if (!currentUser.id) {
+      if (!userId) {
           showCustomAlert("Please log in to save a report.");
+          return;
+      }
+      
+      const allowedRoles = ['Early Youth Instructor', 'Early Youth Advisor', 'TC'];
+      if (!allowedRoles.includes(currentUser.role)) {
+          showCustomAlert("You do not have permission to write reports.");
           return;
       }
 
       try {
-        await addDoc(collection(db, "mywhelp_reports"), {
-          user: currentUser.id,
+        const reportData = {
+          user: userId,
+          userName: currentUser.name,
           role: currentUser.role,
           content: text,
-          timestamp: new Date().toISOString()
-        });
+          timestamp: new Date().toISOString(),
+          edits: 0
+        };
+        
+        // Save reports to a public collection for visibility based on role
+        const reportsCollectionRef = collection(db, `artifacts/${appId}/public/data/reports`);
+        await addDoc(reportsCollectionRef, reportData);
 
         showCustomAlert("Report saved successfully!");
         document.getElementById("reportText").value = "";
@@ -769,134 +1356,367 @@
       }
     };
 
-    async function loadReports() {
+    // Loads reports written by the current user
+    function loadReports() {
       const list = document.getElementById("reportList");
       const noReportsParagraph = document.getElementById("noMyReports");
+      const spinner = document.getElementById('myReportsSpinner');
+
       list.innerHTML = "";
       noReportsParagraph.classList.add('hidden');
+      spinner.classList.remove('hidden');
 
-      if (!currentUser.id) { return; }
+      if (!userId || !['Early Youth Instructor', 'Early Youth Advisor', 'TC'].includes(currentUser.role)) { 
+        spinner.classList.add('hidden');
+        return; 
+      }
 
       try {
-        const q = query(collection(db, "mywhelp_reports"), where("user", "==", currentUser.id));
-        const snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-            noReportsParagraph.classList.remove('hidden');
-            return;
-        }
+        const q = query(collection(db, `artifacts/${appId}/public/data/reports`), where("user", "==", userId));
+        onSnapshot(q, (snapshot) => {
+          list.innerHTML = "";
+          if (snapshot.empty) {
+              noReportsParagraph.classList.remove('hidden');
+              spinner.classList.add('hidden');
+          } else {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const li = document.createElement("li");
+              li.className = "list-group-item d-flex justify-content-between align-items-center";
+              const reportDate = new Date(data.timestamp).toLocaleString();
+              
+              const isEditable = data.edits < 3;
+              const editButtonClass = isEditable ? 'btn-info' : 'btn-secondary disabled';
+              const editButtonText = isEditable ? `<i class="fas fa-edit"></i> Edit` : `<i class="fas fa-edit"></i> Max Edits`;
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const li = document.createElement("li");
-          li.className = "list-group-item d-flex justify-content-between align-items-center";
-          const reportDate = new Date(data.timestamp).toLocaleString();
-          li.innerHTML = `
-            <div>
-                <small class="text-muted">${reportDate}</small><br>
-                ${data.content}
-            </div>
-            <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal" data-report-content="${encodeURIComponent(data.content)}">
-              <i class="fas fa-expand-alt"></i>
-            </button>
-          `;
-          list.appendChild(li);
+              li.innerHTML = `
+                <div class="flex-grow-1 me-3">
+                  <small class="text-muted">On ${reportDate} (Edits: ${data.edits}/3)</small><br>
+                  <div class="report-content-preview">${data.content}</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm ${editButtonClass}" onclick="showEditReportModal('${doc.id}', '${encodeURIComponent(data.content)}', ${data.edits})">
+                      ${editButtonText}
+                  </button>
+                  <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal" 
+                          data-report-id="${doc.id}"
+                          data-report-content="${encodeURIComponent(data.content)}"
+                          data-report-author="${data.userName}"
+                          data-report-date="${reportDate}"
+                          data-report-edits="${data.edits}">
+                      <i class="fas fa-expand-alt"></i>
+                  </button>
+                </div>
+              `;
+              list.appendChild(li);
+            });
+            spinner.classList.add('hidden');
+          }
         });
       } catch (error) {
         console.error("Error loading user reports:", error);
         list.innerHTML = `<li class="list-group-item text-danger">Error loading reports.</li>`;
+        spinner.classList.add('hidden');
       }
     }
-
-    async function loadVisibleReports() {
+    
+    // Shows reports visible to the current user based on their role hierarchy
+    function loadVisibleReports() {
       const list = document.getElementById("visibleReports");
       const noVisibleReportsParagraph = document.getElementById("noVisibleReports");
+      const spinner = document.getElementById('allReportsSpinner');
+
       list.innerHTML = "";
       noVisibleReportsParagraph.classList.add('hidden');
+      spinner.classList.remove('hidden');
 
-      if (!currentUser.id) { return; }
-
+      if (!userId || !['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(currentUser.role)) {
+        spinner.classList.add('hidden');
+        return;
+      }
+      
       const viewMap = {
-        'RC': ['Early Youth', 'Early Youth Instructor', 'Early Youth Advisor', 'TC'],
-        'TC': ['Early Youth', 'Early Youth Instructor', 'Early Youth Advisor'],
-        'Early Youth Advisor': ['Early Youth', 'Early Youth Instructor'],
-        'Early Youth Instructor': ['Early Youth']
+        'RC': ['Early Youth Instructor', 'Early Youth Advisor', 'TC'],
+        'TC': ['Early Youth Instructor', 'Early Youth Advisor'],
+        'Early Youth Advisor': ['Early Youth Instructor'],
+        'Early Youth Instructor': ['Early Youth Instructor']
       };
+      
+      const rolesToView = viewMap[currentUser.role] || [];
+      rolesToView.push(currentUser.role); // Always include reports from the current user's role
 
       try {
-        const allSnapshot = await getDocs(collection(db, "mywhelp_reports"));
-        let hasVisibleReports = false;
+        const q = query(collection(db, `artifacts/${appId}/public/data/reports`), where('role', 'in', rolesToView));
+        onSnapshot(q, (snapshot) => {
+          const reports = [];
+          snapshot.forEach(doc => reports.push({...doc.data(), id: doc.id}));
+          reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        allSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (
-            data.user === currentUser.id ||
-            (viewMap[currentUser.role] && viewMap[currentUser.role].includes(data.role))
-          ) {
-            const li = document.createElement("li");
-            li.className = "list-group-item d-flex justify-content-between align-items-center";
-            const reportDate = new Date(data.timestamp).toLocaleString();
-            li.innerHTML = `
-              <div>
-                <small class="text-muted">${reportDate}</small><br>
-                <strong>[${data.user} - ${data.role}]</strong> ${data.content}
-              </div>
-              <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal" data-report-content="${encodeURIComponent(data.content)}">
-                <i class="fas fa-expand-alt"></i>
-              </button>
-            `;
-            list.appendChild(li);
-            hasVisibleReports = true;
-          }
-        });
-
-        if (!hasVisibleReports) {
+          list.innerHTML = "";
+          if (reports.length === 0) {
             noVisibleReportsParagraph.classList.remove('hidden');
-        }
+          } else {
+            reports.forEach(data => {
+              const li = document.createElement("li");
+              li.className = "list-group-item d-flex justify-content-between align-items-center";
+              const reportDate = new Date(data.timestamp).toLocaleString();
+              li.innerHTML = `
+                <div class="flex-grow-1 me-3">
+                  <small class="text-muted">From ${data.userName} (${data.role}) on ${reportDate}</small><br>
+                  <div class="report-content-preview">${data.content}</div>
+                </div>
+                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#reportModal"
+                        data-report-id="${data.id}"
+                        data-report-content="${encodeURIComponent(data.content)}"
+                        data-report-author="${data.userName}"
+                        data-report-date="${reportDate}"
+                        data-report-edits="${data.edits}">
+                  <i class="fas fa-expand-alt"></i>
+                </button>
+              `;
+              list.appendChild(li);
+            });
+          }
+          spinner.classList.add('hidden');
+        });
       } catch (error) {
         console.error("Error loading visible reports:", error);
         list.innerHTML = `<li class="list-group-item text-danger">Error loading reports.</li>`;
+        spinner.classList.add('hidden');
       }
     }
 
-    const reportModal = document.createElement('div');
-    reportModal.className = 'modal fade';
-    reportModal.id = 'reportModal';
-    reportModal.setAttribute('tabindex', '-1');
-    reportModal.setAttribute('aria-labelledby', 'reportModalLabel');
-    reportModal.setAttribute('aria-hidden', 'true');
-    reportModal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="background-color: #2c0b4e; color: white; border-radius: 15px;">
-          <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-            <h5 class="modal-title" id="reportModalLabel">Full Report</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
-          </div>
-          <div class="modal-body" id="reportModalBody">
-            <!-- Report content will be loaded here -->
-          </div>
-          <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.2);">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(reportModal);
-
-    reportModal.addEventListener('show.bs.modal', function (event) {
+    // Displays the full report modal
+    document.getElementById('reportModal').addEventListener('show.bs.modal', function (event) {
       const button = event.relatedTarget;
       const reportContent = decodeURIComponent(button.getAttribute('data-report-content'));
-      const modalBody = reportModal.querySelector('#reportModalBody');
-      modalBody.textContent = reportContent;
+      const reportId = button.getAttribute('data-report-id');
+      const reportAuthor = button.getAttribute('data-report-author');
+      const reportDate = button.getAttribute('data-report-date');
+      const reportEdits = button.getAttribute('data-report-edits');
+      
+      document.getElementById('reportModalTextarea').value = reportContent;
+      document.getElementById('reportModalTextarea').setAttribute('readonly', true);
+      document.getElementById('reportModalLabel').textContent = `Report by ${reportAuthor}`;
+      document.getElementById('reportAuthor').textContent = reportAuthor;
+      document.getElementById('reportDate').textContent = reportDate;
+      document.getElementById('editCountInfo').textContent = `Edits: ${reportEdits}/3`;
+
+      const editBtn = document.getElementById('editReportButton');
+      const saveBtn = document.getElementById('saveEditedReportButton');
+      
+      editBtn.classList.add('hidden');
+      saveBtn.classList.add('hidden');
     });
 
-    document.getElementById('attendanceTable').addEventListener('change', function(event) {
-      if (event.target.classList.contains('attendance-status-select')) {
-        event.target.classList.remove('status-present', 'status-absent', 'status-late');
-        event.target.classList.add(`status-${event.target.value.toLowerCase()}`);
+    // --- Personal Notes and To-do Lists (EY only) ---
+    function loadPersonalNotes() {
+      const list = document.getElementById("personalNotesList");
+      const spinner = document.getElementById("notesSpinner");
+      const noNotesParagraph = document.getElementById("noPersonalNotes");
+      list.innerHTML = "";
+      spinner.classList.remove('hidden');
+      noNotesParagraph.classList.add('hidden');
+      
+      if (currentUser.role !== 'Early Youth' || !userId) {
+        spinner.classList.add('hidden');
+        return;
       }
-    });
+      
+      try {
+        const q = query(collection(db, `artifacts/${appId}/users/${userId}/personalNotes`));
+        onSnapshot(q, (snapshot) => {
+          list.innerHTML = "";
+          if (snapshot.empty) {
+            noNotesParagraph.classList.remove('hidden');
+            spinner.classList.add('hidden');
+          } else {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const li = document.createElement("li");
+              li.className = "list-group-item d-flex justify-content-between align-items-start";
+              const noteDate = new Date(data.timestamp).toLocaleString();
+              li.innerHTML = `
+                <div class="flex-grow-1 me-3">
+                  <small class="text-muted">On ${noteDate}</small>
+                  <p class="mb-0 mt-1">${data.content}</p>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="deletePersonalNote('${doc.id}')">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              `;
+              list.appendChild(li);
+            });
+            spinner.classList.add('hidden');
+          }
+        });
+      } catch (error) {
+        console.error("Error loading personal notes:", error);
+        list.innerHTML = `<li class="list-group-item text-danger">Error loading notes.</li>`;
+        spinner.classList.add('hidden');
+      }
+    }
+    
+    window.savePersonalNote = async () => {
+      const noteTextarea = document.getElementById("personalNoteText");
+      const content = noteTextarea.value.trim();
+      if (!content) {
+        showCustomAlert("Note cannot be empty.");
+        return;
+      }
+      if (!userId || currentUser.role !== 'Early Youth') {
+        showCustomAlert("You do not have permission to save notes.");
+        return;
+      }
+      
+      try {
+        const noteData = {
+          content: content,
+          timestamp: new Date().toISOString()
+        };
+        await addDoc(collection(db, `artifacts/${appId}/users/${userId}/personalNotes`), noteData);
+        showCustomAlert("Note saved successfully!");
+        noteTextarea.value = "";
+      } catch (error) {
+        console.error("Error saving personal note:", error);
+        showCustomAlert("Failed to save note.");
+      }
+    };
+    
+    window.deletePersonalNote = async (noteId) => {
+      if (!userId || currentUser.role !== 'Early Youth') {
+        showCustomAlert("You do not have permission to delete notes.");
+        return;
+      }
+      
+      try {
+        await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/personalNotes`, noteId));
+        showCustomAlert("Note deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting personal note:", error);
+        showCustomAlert("Failed to delete note.");
+      }
+    };
+
+    function loadTodoItems() {
+      const list = document.getElementById("todoList");
+      const spinner = document.getElementById("todosSpinner");
+      const noTodosParagraph = document.getElementById("noTodos");
+      list.innerHTML = "";
+      spinner.classList.remove('hidden');
+      noTodosParagraph.classList.add('hidden');
+      
+      if (currentUser.role !== 'Early Youth' || !userId) {
+        spinner.classList.add('hidden');
+        return;
+      }
+      
+      try {
+        const q = query(collection(db, `artifacts/${appId}/users/${userId}/todoList`));
+        onSnapshot(q, (snapshot) => {
+          list.innerHTML = "";
+          if (snapshot.empty) {
+            noTodosParagraph.classList.remove('hidden');
+            spinner.classList.add('hidden');
+          } else {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const li = document.createElement("li");
+              li.className = "list-group-item d-flex justify-content-between align-items-center";
+              li.innerHTML = `
+                <div class="flex-grow-1 list-item-content me-3">${data.task}</div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-info" onclick="showEditTodoModal('${doc.id}', '${encodeURIComponent(data.task)}')">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteTodoItem('${doc.id}')">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              `;
+              list.appendChild(li);
+            });
+            spinner.classList.add('hidden');
+          }
+        });
+      } catch (error) {
+        console.error("Error loading to-do list:", error);
+        list.innerHTML = `<li class="list-group-item text-danger">Error loading to-do list.</li>`;
+        spinner.classList.add('hidden');
+      }
+    }
+    
+    window.addTodoItem = async () => {
+      const todoInput = document.getElementById("todoInput");
+      const task = todoInput.value.trim();
+      if (!task) {
+        showCustomAlert("To-do item cannot be empty.");
+        return;
+      }
+      if (!userId || currentUser.role !== 'Early Youth') {
+        showCustomAlert("You do not have permission to add to-do items.");
+        return;
+      }
+      
+      try {
+        const todoData = { task: task, timestamp: new Date().toISOString() };
+        await addDoc(collection(db, `artifacts/${appId}/users/${userId}/todoList`), todoData);
+        showCustomAlert("To-do item added!");
+        todoInput.value = "";
+      } catch (error) {
+        console.error("Error adding to-do item:", error);
+        showCustomAlert("Failed to add to-do item.");
+      }
+    };
+    
+    window.showEditTodoModal = (todoId, task) => {
+      const modal = new bootstrap.Modal(document.getElementById('editTodoModal'));
+      const editInput = document.getElementById('editTodoInput');
+      editInput.value = decodeURIComponent(task);
+      const saveButton = document.getElementById('saveTodoEditButton');
+      saveButton.onclick = () => saveTodoEdit(todoId);
+      modal.show();
+    };
+    
+    async function saveTodoEdit(todoId) {
+        const newText = document.getElementById('editTodoInput').value.trim();
+        if (!newText) {
+            showCustomAlert('To-do item cannot be empty.');
+            return;
+        }
+
+        if (!userId || currentUser.role !== 'Early Youth') {
+            showCustomAlert("You do not have permission to edit to-do items.");
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/todoList`, todoId), { task: newText });
+            showCustomAlert('To-do item updated successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('editTodoModal')).hide();
+        } catch (error) {
+            console.error("Error updating to-do item:", error);
+            showCustomAlert("Failed to update to-do item.");
+        }
+    }
+
+    window.deleteTodoItem = async (todoId) => {
+      if (!userId || currentUser.role !== 'Early Youth') {
+        showCustomAlert("You do not have permission to delete to-do items.");
+        return;
+      }
+      
+      try {
+        await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/todoList`, todoId));
+        showCustomAlert("To-do item deleted!");
+      } catch (error) {
+        console.error("Error deleting to-do item:", error);
+        showCustomAlert("Failed to delete to-do item.");
+      }
+    };
+    
+    // Run initialization on page load
+    window.addEventListener('DOMContentLoaded', initializeFirebase);
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
