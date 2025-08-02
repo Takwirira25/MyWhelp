@@ -71,7 +71,6 @@
                 </div>
                 <button id="login-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mb-2" onclick="loginUser()">Login</button>
                 <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotPasswordModal()">Forgot Password?</button>
-                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotMyWhelpIdModal()">Forgot My ID?</button>
                 <button class="w-full bg-transparent hover:bg-white/10 border border-white/20 text-white font-bold py-2 px-4 rounded-lg transition duration-300" onclick="goBackToSelection()">Back</button>
             </div>
 
@@ -133,49 +132,18 @@
         </div>
     </div>
 
-    <!-- Forgot MyWhelp ID Modal (Security Question) -->
-    <div id="forgotMyWhelpIdModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
-        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
-            <h5 class="text-xl font-bold mb-4">Forgot MyWhelp ID</h5>
-            <div id="forgotMyWhelpIdStep1">
-                <p class="text-gray-300 mb-4">Enter your email to retrieve your MyWhelp ID using your security question.</p>
-                <input type="email" id="forgotMyWhelpIdEmail" placeholder="Enter your email" class="form-input w-full mb-3 p-3 rounded-lg">
-                <div class="flex justify-end gap-4 mt-6">
-                    <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('forgotMyWhelpIdModal').classList.add('hidden')">Cancel</button>
-                    <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="findMyWhelpIdByEmail()">Next</button>
-                </div>
-            </div>
-            <div id="forgotMyWhelpIdStep2" class="hidden">
-                <p class="text-gray-300 mb-2">Answer your security question:</p>
-                <p id="forgotMyWhelpIdQuestion" class="mb-4 font-semibold"></p>
-                <input type="text" id="forgotMyWhelpIdAnswer" placeholder="Your answer" class="form-input w-full mb-3 p-3 rounded-lg">
-                <div class="flex justify-end gap-4 mt-6">
-                    <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="resetForgotMyWhelpIdModal()">Back</button>
-                    <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="revealMyWhelpId()">Reveal My ID</button>
-                </div>
-            </div>
+    <!-- Email Verification Modal -->
+    <div id="emailVerificationModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full text-center">
+            <h5 class="text-xl font-bold mb-4" id="emailVerificationModalTitle">Verify Your Email</h5>
+            <p id="emailVerificationModalBody" class="text-gray-300 mb-6">
+                A verification email has been sent to your address. Please check your inbox (and spam folder) to verify your account.
+                You will be able to log in after verification.
+            </p>
+            <button id="resendVerificationEmailBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="resendVerificationEmail()">Resend Verification Email</button>
+            <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300" onclick="hideEmailVerificationModal()">OK</button>
         </div>
     </div>
-
-    <!-- Security Question Modal (for Registration) -->
-    <div id="securityQuestionModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
-        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
-            <h5 class="text-xl font-bold mb-4">Set Your Security Question</h5>
-            <p class="text-gray-300 mb-4">Please select a security question and provide an answer. This can help you recover your MyWhelp ID if needed.</p>
-            <select id="regSecurityQuestion" class="form-input w-full p-3 rounded-lg mb-3">
-                <option value="" disabled selected>Select a security question</option>
-                <option value="What was your first pet's name?">What was your first pet's name?</option>
-                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-                <option value="What city were you born in?">What city were you born in?</option>
-                <option value="What is the name of your favorite book?">What is the name of your favorite book?</option>
-            </select>
-            <input type="text" id="regSecurityAnswer" placeholder="Your answer" class="form-input w-full mb-3 p-3 rounded-lg">
-            <div class="flex justify-end gap-4 mt-6">
-                <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveSecurityQuestionAndCompleteRegistration()">Save & Continue</button>
-            </div>
-        </div>
-    </div>
-
 
     <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
         <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-2xl w-full">
@@ -224,12 +192,11 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Environment & Config ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mywhelp-dev-app';
-        // Replaced dynamic firebaseConfig with the user-provided hardcoded version
         const firebaseConfig = {
             apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
             authDomain: "samrad-quiz.firebaseapp.com",
@@ -245,7 +212,6 @@
         let currentUserId; // Firebase Auth UID
         let currentUserProfile = {}; // MyWhelp app user profile
         let unsubscribeListeners = []; // To detach listeners on logout
-        let registrationTempUserData = null; // To hold user data during security question setup
 
         // --- Firestore Paths ---
         const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
@@ -266,14 +232,22 @@
                     if (user) {
                         currentUserId = user.uid;
                         console.log("Auth state changed. User signed in with UID:", currentUserId);
-                        // We check for a profile based on the Firebase UID, not the MyWhelp ID.
+
+                        if (!user.emailVerified) {
+                            showEmailVerificationModal("Verify Your Email", "Your email address is not verified. Please check your inbox (and spam folder) for a verification link. You must verify your email to access the application.");
+                            showLoginContent(); // Ensure login content is shown
+                            return;
+                        }
+
                         const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, currentUserId);
                         const userDocSnap = await getDoc(userDocRef);
                         if (userDocSnap.exists()) {
                             await loadUserProfile(currentUserId);
                         } else {
-                            console.log("Authenticated user has no profile. Showing login/register screen.");
-                            showLoginContent();
+                            console.warn("Authenticated user has no profile in Firestore for UID:", currentUserId, ". This might indicate a registration issue or data inconsistency.");
+                            showCustomAlert("Your user profile could not be found. Please contact support or try registering again if you believe this is an error.", "Profile Missing");
+                            await signOut(auth); // Force sign out if profile is missing to prevent loop
+                            showLoginContent(); // Ensure login content is shown after sign out
                         }
                     } else {
                         console.log("User signed out.");
@@ -281,11 +255,6 @@
                         showLoginContent();
                     }
                 });
-
-                // Removed signInAnonymously and signInWithCustomToken as per user's request for email/password only auth
-                // and to resolve custom-token-mismatch error with hardcoded firebaseConfig.
-                // The app will now start not signed in, and rely on explicit login/registration.
-
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
                 showCustomAlert("Critical Error: Could not initialize the application.");
@@ -294,16 +263,21 @@
         
         // --- User Profile & Session Management ---
         async function loadUserProfile(uid) {
+            console.log("Attempting to load user profile from Firestore for UID:", uid);
             const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, uid);
             const userDocSnap = await getDoc(userDocRef);
 
             if (userDocSnap.exists()) {
                 currentUserProfile = { uid: uid, ...userDocSnap.data() };
-                console.log("User profile loaded:", currentUserProfile);
+                console.log("User profile loaded successfully:", currentUserProfile);
                 showMainContent();
             } else {
-                console.warn("Attempted to load a non-existent profile for UID:", uid);
-                showLoginContent(); // Force back to login if profile is missing
+                console.warn("User profile DOES NOT EXIST in Firestore for UID:", uid, ". Redirecting to login.");
+                // This case should ideally not happen for a successfully registered and verified user.
+                // If it does, it implies a profile creation failure during registration.
+                showCustomAlert("Your user profile could not be found. Please contact support or try registering again if you believe this is an error.", "Profile Missing");
+                await signOut(auth); // Force sign out if profile is missing to prevent loop
+                showLoginContent(); // Ensure login content is shown after sign out
             }
         }
         
@@ -312,6 +286,7 @@
                 await signOut(auth);
             } catch (error) {
                 console.error("Logout Error:", error);
+                showCustomAlert("Logout failed: " + error.message);
             }
         };
 
@@ -330,11 +305,13 @@
         }
 
         function showMainContent() {
+            console.log("Showing main content for user:", currentUserProfile.name);
             document.getElementById('login-card').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             document.getElementById('welcomeText').textContent = `Welcome, ${currentUserProfile.name}!`;
-            document.getElementById('userIdDisplay').textContent = `ID: ${currentUserProfile.mywhelpId}`;
+            document.getElementById('userIdDisplay').textContent = `ID: ${currentUserProfile.uid}`; // Display Firebase UID as MyWhelp ID
             setupDynamicUI();
+            console.log("Main content setup complete.");
         }
         
         window.showReturningUserForm = () => {
@@ -356,8 +333,162 @@
             document.getElementById('returning-user-form').classList.add('hidden');
             document.getElementById('new-user-form').classList.add('hidden');
             document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+            // Clear form fields
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('userRole').value = '';
         };
         
+        // --- Authentication Functions ---
+        window.registerUser = async () => {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const role = document.getElementById('userRole').value;
+
+            if (!firstName || !lastName || !email || !password || !role) {
+                showCustomAlert("Please fill in all registration fields.");
+                return;
+            }
+
+            if (password.length < 6) {
+                showCustomAlert("Password must be at least 6 characters long.");
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log("Firebase user created:", user.uid);
+
+                // Send email verification
+                await sendEmailVerification(user);
+                console.log("Email verification sent for user:", user.email);
+
+                // Save user profile to Firestore
+                console.log("Attempting to save user profile to Firestore for UID:", user.uid);
+                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.uid);
+                await setDoc(userDocRef, {
+                    name: `${firstName} ${lastName}`,
+                    email: email,
+                    role: role,
+                    createdAt: serverTimestamp(),
+                    uid: user.uid // Store Firebase UID as MyWhelp ID
+                });
+                console.log("User profile saved to Firestore for UID:", user.uid);
+
+                showEmailVerificationModal("Registration Successful!", "Your account has been created. A verification email has been sent to " + email + ". Please verify your email to log in.");
+                goBackToSelection(); // Go back to selection after registration
+            } catch (error) {
+                console.error("Registration Error:", error);
+                let errorMessage = "Registration failed. Please try again.";
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "This email is already registered. Please use a different email or log in.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Invalid email address format.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = "Password is too weak. Please choose a stronger password.";
+                }
+                showCustomAlert(errorMessage);
+            }
+        };
+
+        window.loginUser = async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                showCustomAlert("Please enter your email and password.");
+                return;
+            }
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log("Firebase user signed in:", user.uid);
+
+                if (!user.emailVerified) {
+                    showEmailVerificationModal("Email Not Verified", "Your email address is not verified. Please check your inbox for a verification link or resend the email.");
+                    await signOut(auth); // Sign out the unverified user
+                    return;
+                }
+                // If email is verified, onAuthStateChanged will handle loading the profile and main content
+            } catch (error) {
+                console.error("Login Error:", error);
+                let errorMessage = "Login failed. Please check your credentials.";
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorMessage = "Invalid email or password.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Invalid email address format.";
+                }
+                showCustomAlert(errorMessage);
+            }
+        };
+
+        window.sendPasswordResetEmailHandler = async () => {
+            const email = document.getElementById('resetPasswordEmail').value.trim();
+            if (!email) {
+                showCustomAlert("Please enter your email address.");
+                return;
+            }
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showCustomAlert("Password reset email sent! Check your inbox (and spam folder).");
+                document.getElementById('forgotPasswordModal').classList.add('hidden');
+            } catch (error) {
+                console.error("Password Reset Error:", error);
+                let errorMessage = "Failed to send password reset email.";
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = "No user found with that email address.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Invalid email address format.";
+                }
+                showCustomAlert(errorMessage);
+            }
+        };
+
+        window.resendVerificationEmail = async () => {
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    await sendEmailVerification(user);
+                    showCustomAlert("Verification email resent! Please check your inbox.");
+                } catch (error) {
+                    console.error("Error resending verification email:", error);
+                    showCustomAlert("Failed to resend verification email: " + error.message);
+                }
+            } else {
+                showCustomAlert("No active user to resend verification email for. Please try logging in again.");
+            }
+        };
+
+        // --- Modal Functions ---
+        function showCustomAlert(message, title = "Message") {
+            document.getElementById('alertModalLabel').textContent = title;
+            document.getElementById('alertModalBody').textContent = message;
+            document.getElementById('alertModal').classList.remove('hidden');
+        }
+
+        window.showForgotPasswordModal = () => {
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+        };
+
+        function showEmailVerificationModal(title, message) {
+            document.getElementById('emailVerificationModalTitle').textContent = title;
+            document.getElementById('emailVerificationModalBody').textContent = message;
+            document.getElementById('emailVerificationModal').classList.remove('hidden');
+        }
+
+        window.hideEmailVerificationModal = () => {
+            document.getElementById('emailVerificationModal').classList.add('hidden');
+        };
+
         // --- Dynamic UI based on Role ---
         function setupDynamicUI() {
             const role = currentUserProfile.role;
@@ -463,7 +594,7 @@
                 <input type="date" id="attendanceDate" value="${today}" class="form-input p-3 rounded-lg mb-4 w-full md:w-auto">
                 ${getSpinner('attendanceStudentsSpinner')}
                 <div id="attendance-table-container" class="overflow-x-auto"></div>
-                 <p id="noStudentsForAttendance" class="text-gray-400 text-center mt-4 hidden">No Early Youth users found to take attendance for.</p>
+                   <p id="noStudentsForAttendance" class="text-gray-400 text-center mt-4 hidden">No Early Youth users found to take attendance for.</p>
                 <div class="flex justify-end mt-4">
                     <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveAttendance()"><i class="fas fa-save mr-2"></i>Save Attendance</button>
                 </div>
@@ -521,645 +652,749 @@
                 <h4 class="text-xl font-bold mb-4">Viewable Reports</h4>
                 ${getSpinner('allReportsSpinner')}
                 <ul id="visibleReports" class="space-y-3"></ul>
-                <p id="noVisibleReports" class="text-gray-400 text-center mt-4 hidden">No reports are available for you to view.</p>
+                <p id="noVisibleReports" class="text-gray-400 text-center mt-4 hidden">No reports found.</p>
             `;
         }
-        
-        // --- Feature Implementation: Registration & Login ---
-        window.registerUser = async () => {
-            const firstName = document.getElementById('firstName').value.trim();
-            const lastName = document.getElementById('lastName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('userRole').value;
 
-            if (!firstName || !lastName || !role || !email || !password) {
-                return showCustomAlert("All fields are required.");
-            }
+        // --- Data Handling Functions (Firestore) ---
 
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const userUid = userCredential.user.uid;
-
-                // Store temporary user data to be used after security question setup
-                registrationTempUserData = {
-                    uid: userUid,
-                    mywhelpId: generateMyWhelpId(firstName, lastName, role),
-                    name: `${firstName} ${lastName}`,
-                    firstName,
-                    lastName,
-                    email,
-                    role,
-                    createdAt: serverTimestamp()
-                };
-
-                // Show security question modal
-                document.getElementById('securityQuestionModal').classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Registration error:", error);
-                // Check for specific error codes to provide more user-friendly messages
-                if (error.code === 'auth/email-already-in-use') {
-                    showCustomAlert("This email is already in use. Please try logging in or use a different email.", "Registration Failed");
-                } else if (error.code === 'auth/weak-password') {
-                    showCustomAlert("Password is too weak. Please use a stronger password (at least 6 characters).", "Registration Failed");
-                } else {
-                    showCustomAlert("Failed to register: " + error.message, "Registration Failed");
-                }
-            }
-        };
-
-        window.saveSecurityQuestionAndCompleteRegistration = async () => {
-            const question = document.getElementById('regSecurityQuestion').value;
-            const answer = document.getElementById('regSecurityAnswer').value.trim();
-
-            if (!question || !answer) {
-                return showCustomAlert("Please select a security question and provide an answer.", "Security Question Required");
-            }
-
-            if (!registrationTempUserData) {
-                console.error("No temporary user data found for registration completion.");
-                return showCustomAlert("An error occurred. Please try registering again.", "Error");
-            }
-
-            try {
-                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, registrationTempUserData.uid);
-                await setDoc(userDocRef, {
-                    ...registrationTempUserData,
-                    securityQuestion: question,
-                    securityAnswer: answer // In a real app, hash this answer!
-                });
-
-                document.getElementById('securityQuestionModal').classList.add('hidden');
-                registrationTempUserData = null; // Clear temp data
-                await loadUserProfile(userDocRef.id);
-                showCustomAlert(`Registration successful! Your ID is: ${currentUserProfile.mywhelpId}`, "Registration Complete");
-
-            } catch (error) {
-                console.error("Error saving security question and completing registration:", error);
-                showCustomAlert("Failed to complete registration: " + error.message, "Error");
-            }
-        };
-        
-        window.loginUser = async () => {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!email || !password) return showCustomAlert("Please enter both email and password.");
-
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const userUid = userCredential.user.uid;
-                await loadUserProfile(userUid);
-            } catch (error) {
-                console.error("Login error:", error);
-                showCustomAlert("Failed to login: " + error.message);
-            }
-        };
-
-        function generateMyWhelpId(firstName, lastName, role) {
-            const initials = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase();
-            const randomNums = Math.floor(100 + Math.random() * 900);
-            const rolePrefixes = {
-                'Early Youth': 'EY',
-                'Early Youth Instructor': 'EI',
-                'Early Youth Advisor': 'EA',
-                'TC': 'TC',
-                'RC': 'RC'
-            };
-            const prefix = rolePrefixes[role] || 'XX';
-            return `${prefix}${randomNums}${initials}`;
-        }
-        
-        // --- Feature Implementation: Forgot Password (Email Reset) ---
-        window.showForgotPasswordModal = () => {
-            document.getElementById('resetPasswordEmail').value = ''; // Clear previous email
-            document.getElementById('forgotPasswordModal').classList.remove('hidden');
-        };
-
-        window.sendPasswordResetEmailHandler = async () => {
-            const email = document.getElementById('resetPasswordEmail').value.trim();
-            if (!email) {
-                return showCustomAlert("Please enter your email address.", "Required Field");
-            }
-
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showCustomAlert("A password reset link has been sent to your email address. Please check your inbox (and spam folder).", "Password Reset Sent");
-                document.getElementById('forgotPasswordModal').classList.add('hidden');
-            } catch (error) {
-                console.error("Error sending password reset email:", error);
-                if (error.code === 'auth/user-not-found') {
-                    showCustomAlert("No user found with that email address. Please check the email or register a new account.", "User Not Found");
-                } else {
-                    showCustomAlert("Failed to send password reset email: " + error.message, "Error");
-                }
-            }
-        };
-
-        // --- Feature Implementation: Forgot MyWhelp ID (Security Question) ---
-        let forgotMyWhelpIdUserData = null; // To store user data during ID recovery
-        
-        window.showForgotMyWhelpIdModal = () => {
-            document.getElementById('forgotMyWhelpIdEmail').value = '';
-            document.getElementById('forgotMyWhelpIdStep1').classList.remove('hidden');
-            document.getElementById('forgotMyWhelpIdStep2').classList.add('hidden');
-            document.getElementById('forgotMyWhelpIdModal').classList.remove('hidden');
-            forgotMyWhelpIdUserData = null; // Reset temp data
-        };
-
-        window.resetForgotMyWhelpIdModal = () => {
-            document.getElementById('forgotMyWhelpIdStep1').classList.remove('hidden');
-            document.getElementById('forgotMyWhelpIdStep2').classList.add('hidden');
-            document.getElementById('forgotMyWhelpIdEmail').value = '';
-            document.getElementById('forgotMyWhelpIdQuestion').textContent = '';
-            document.getElementById('forgotMyWhelpIdAnswer').value = '';
-            forgotMyWhelpIdUserData = null;
-        };
-
-        window.findMyWhelpIdByEmail = async () => {
-            const email = document.getElementById('forgotMyWhelpIdEmail').value.trim();
-            if (!email) {
-                return showCustomAlert("Please enter your email address.", "Required Field");
-            }
-
-            try {
-                const usersQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("email", "==", email));
-                const querySnapshot = await getDocs(usersQuery);
-
-                if (querySnapshot.empty) {
-                    return showCustomAlert("No user found with that email address.", "User Not Found");
-                }
-
-                forgotMyWhelpIdUserData = querySnapshot.docs[0].data();
-                if (!forgotMyWhelpIdUserData.securityQuestion || !forgotMyWhelpIdUserData.securityAnswer) {
-                    return showCustomAlert("This account does not have a security question set up. Please use the 'Forgot Password?' option or contact support.", "Security Question Missing");
-                }
-
-                document.getElementById('forgotMyWhelpIdQuestion').textContent = forgotMyWhelpIdUserData.securityQuestion;
-                document.getElementById('forgotMyWhelpIdStep1').classList.add('hidden');
-                document.getElementById('forgotMyWhelpIdStep2').classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Error finding user by email for ID recovery:", error);
-                showCustomAlert("An error occurred: " + error.message, "Error");
-            }
-        };
-
-        window.revealMyWhelpId = () => {
-            const userAnswer = document.getElementById('forgotMyWhelpIdAnswer').value.trim();
-            if (!userAnswer) {
-                return showCustomAlert("Please provide an answer to the security question.", "Required Field");
-            }
-
-            if (forgotMyWhelpIdUserData && userAnswer.toLowerCase() === forgotMyWhelpIdUserData.securityAnswer.toLowerCase()) {
-                showCustomAlert(`Your MyWhelp ID is: <span class="font-bold text-lg">${forgotMyWhelpIdUserData.mywhelpId}</span>`, "MyWhelp ID Recovered");
-                document.getElementById('forgotMyWhelpIdModal').classList.add('hidden');
-                resetForgotMyWhelpIdModal();
-            } else {
-                showCustomAlert("Incorrect answer. Please try again or use the 'Forgot Password?' option.", "Incorrect Answer");
-            }
-        };
-
-        // --- Feature Implementation: Notes & Todos ---
+        // Personal Notes
         window.savePersonalNote = async () => {
-            const text = document.getElementById('personalNoteText').value.trim();
-            if (!text) return showCustomAlert("Note cannot be empty.");
+            const noteText = document.getElementById('personalNoteText').value.trim();
+            if (!noteText) {
+                showCustomAlert("Note cannot be empty.");
+                return;
+            }
             try {
-                const notesCollection = collection(db, getPrivateNotesCollectionPath(currentUserId));
-                await addDoc(notesCollection, { content: text, createdAt: serverTimestamp() });
-                document.getElementById('personalNoteText').value = '';
-            } catch (error) { console.error("Error saving note:", error); showCustomAlert("Failed to save note."); }
+                const notesCollectionRef = collection(db, getPrivateNotesCollectionPath(currentUserId));
+                await addDoc(notesCollectionRef, {
+                    text: noteText,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('personalNoteText').value = ''; // Clear textarea
+                showCustomAlert("Note saved successfully!");
+            } catch (error) {
+                console.error("Error saving note:", error);
+                showCustomAlert("Failed to save note: " + error.message);
+            }
         };
 
         function loadPersonalNotes() {
-            const q = query(collection(db, getPrivateNotesCollectionPath(currentUserId)));
-            const unsub = onSnapshot(q, (snapshot) => {
-                document.getElementById('notesSpinner').classList.add('hidden');
-                const list = document.getElementById('personalNotesList');
-                const noItems = document.getElementById('noPersonalNotes');
-                list.innerHTML = '';
+            const notesList = document.getElementById('personalNotesList');
+            const noNotesMessage = document.getElementById('noPersonalNotes');
+            const spinner = document.getElementById('notesSpinner');
+            spinner.classList.remove('hidden');
+            noNotesMessage.classList.add('hidden');
+            notesList.innerHTML = '';
+
+            const notesCollectionRef = collection(db, getPrivateNotesCollectionPath(currentUserId));
+            const q = query(notesCollectionRef);
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                notesList.innerHTML = '';
                 if (snapshot.empty) {
-                    noItems.classList.remove('hidden');
+                    noNotesMessage.classList.remove('hidden');
                 } else {
-                    noItems.classList.add('hidden');
-                    snapshot.docs.forEach(doc => {
-                        list.innerHTML += `<li class="flex justify-between items-center bg-white/5 p-3 rounded-lg"><span>${doc.data().content}</span><button onclick="deleteNote('${doc.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></li>`;
+                    noNotesMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const note = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <span class="flex-grow">${note.text}</span>
+                            <button class="text-red-400 hover:text-red-600 ml-4" onclick="deletePersonalNote('${doc.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+                        notesList.appendChild(li);
                     });
                 }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading personal notes:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load notes: " + error.message);
             });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        window.deleteNote = async (noteId) => {
-            // Using showCustomAlert instead of confirm for consistency
-            showCustomAlert("Are you sure you want to delete this note? <br><br><button class='bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg mr-2' onclick='deleteNoteConfirmed(\"" + noteId + "\")'>Yes, Delete</button><button class='bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg' onclick='document.getElementById(\"alertModal\").classList.add(\"hidden\")'>Cancel</button>", "Confirm Delete");
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        window.deleteNoteConfirmed = async (noteId) => {
-            await deleteDoc(doc(db, getPrivateNotesCollectionPath(currentUserId), noteId));
-            document.getElementById('alertModal').classList.add('hidden'); // Close the alert after action
-        }
-
-        window.addTodoItem = async () => {
-            const input = document.getElementById('todoInput');
-            if (!input.value.trim()) return;
-            const todosCollection = collection(db, getPrivateTodosCollectionPath(currentUserId));
-            await addDoc(todosCollection, { text: input.value.trim(), completed: false, createdAt: serverTimestamp() });
-            input.value = '';
+        window.deletePersonalNote = async (noteId) => {
+            try {
+                const noteDocRef = doc(db, getPrivateNotesCollectionPath(currentUserId), noteId);
+                await deleteDoc(noteDocRef);
+                showCustomAlert("Note deleted.");
+            } catch (error) {
+                console.error("Error deleting note:", error);
+                showCustomAlert("Failed to delete note: " + error.message);
+            }
         };
-        
+
+        // To-do List
+        window.addTodoItem = async () => {
+            const todoText = document.getElementById('todoInput').value.trim();
+            if (!todoText) {
+                showCustomAlert("To-do item cannot be empty.");
+                return;
+            }
+            try {
+                const todosCollectionRef = collection(db, getPrivateTodosCollectionPath(currentUserId));
+                await addDoc(todosCollectionRef, {
+                    text: todoText,
+                    completed: false,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('todoInput').value = ''; // Clear input
+                showCustomAlert("To-do item added!");
+            } catch (error) {
+                console.error("Error adding todo:", error);
+                showCustomAlert("Failed to add to-do item: " + error.message);
+            }
+        };
+
         function loadTodoItems() {
-            const q = query(collection(db, getPrivateTodosCollectionPath(currentUserId)));
-            const unsub = onSnapshot(q, (snapshot) => {
-                document.getElementById('todosSpinner').classList.add('hidden');
-                const list = document.getElementById('todoList');
-                const noItems = document.getElementById('noTodos');
-                list.innerHTML = '';
+            const todoList = document.getElementById('todoList');
+            const noTodosMessage = document.getElementById('noTodos');
+            const spinner = document.getElementById('todosSpinner');
+            spinner.classList.remove('hidden');
+            noTodosMessage.classList.add('hidden');
+            todoList.innerHTML = '';
+
+            const todosCollectionRef = collection(db, getPrivateTodosCollectionPath(currentUserId));
+            const q = query(todosCollectionRef);
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                todoList.innerHTML = '';
                 if (snapshot.empty) {
-                    noItems.classList.remove('hidden');
+                    noTodosMessage.classList.remove('hidden');
                 } else {
-                    noItems.classList.add('hidden');
-                    snapshot.docs.forEach(docSnap => {
-                        const todo = docSnap.data();
-                        list.innerHTML += `
-                            <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                                <span class="${todo.completed ? 'line-through text-gray-400' : ''}">${todo.text}</span>
-                                <div class="flex gap-3">
-                                    <button onclick="toggleTodo('${docSnap.id}', ${todo.completed})" class="${todo.completed ? 'text-yellow-400' : 'text-green-400'}"><i class="fas fa-check-circle"></i></button>
-                                    <button onclick="showEditTodoModal('${docSnap.id}', '${todo.text}')" class="text-blue-400"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteTodo('${docSnap.id}')" class="text-red-400"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </li>`;
+                    noTodosMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const todo = doc.data();
+                        const li = document.createElement('li');
+                        li.className = `bg-white/10 p-3 rounded-lg flex justify-between items-center ${todo.completed ? 'opacity-60 line-through' : ''}`;
+                        li.innerHTML = `
+                            <div class="flex items-center flex-grow">
+                                <input type="checkbox" class="mr-3 h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500" ${todo.completed ? 'checked' : ''} onchange="toggleTodoCompleted('${doc.id}', ${todo.completed})">
+                                <span class="flex-grow">${todo.text}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <button class="text-blue-400 hover:text-blue-600 ml-4" onclick="showEditTodoModal('${doc.id}', '${todo.text}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-400 hover:text-red-600 ml-2" onclick="deleteTodoItem('${doc.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        todoList.appendChild(li);
                     });
                 }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading todo items:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load to-do items: " + error.message);
             });
-            unsubscribeListeners.push(unsub);
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        window.toggleTodo = async (id, currentStatus) => {
-            await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id), { completed: !currentStatus });
-        }
-        window.deleteTodo = async (id) => {
-            // Using showCustomAlert instead of confirm for consistency
-            showCustomAlert("Are you sure you want to delete this to-do item? <br><br><button class='bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg mr-2' onclick='deleteTodoConfirmed(\"" + id + "\")'>Yes, Delete</button><button class='bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg' onclick='document.getElementById(\"alertModal\").classList.add(\"hidden\")'>Cancel</button>", "Confirm Delete");
-        }
-        window.deleteTodoConfirmed = async (id) => {
-            await deleteDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id));
-            document.getElementById('alertModal').classList.add('hidden'); // Close the alert after action
-        }
-        window.showEditTodoModal = (id, currentText) => {
-            const modal = document.getElementById('editTodoModal');
-            document.getElementById('editTodoInput').value = currentText;
-            modal.classList.remove('hidden');
-            document.getElementById('saveTodoEditButton').onclick = () => saveTodoEdit(id);
-        }
-        async function saveTodoEdit(id) {
+        window.toggleTodoCompleted = async (todoId, currentStatus) => {
+            try {
+                const todoDocRef = doc(db, getPrivateTodosCollectionPath(currentUserId), todoId);
+                await updateDoc(todoDocRef, {
+                    completed: !currentStatus
+                });
+            } catch (error) {
+                console.error("Error toggling todo status:", error);
+                showCustomAlert("Failed to update to-do status: " + error.message);
+            }
+        };
+
+        window.deleteTodoItem = async (todoId) => {
+            try {
+                const todoDocRef = doc(db, getPrivateTodosCollectionPath(currentUserId), todoId);
+                await deleteDoc(todoDocRef);
+                showCustomAlert("To-do item deleted.");
+            } catch (error) {
+                console.error("Error deleting todo:", error);
+                showCustomAlert("Failed to delete to-do item: " + error.message);
+            }
+        };
+
+        window.showEditTodoModal = (todoId, todoText) => {
+            const editTodoInput = document.getElementById('editTodoInput');
+            editTodoInput.value = todoText;
+            document.getElementById('saveTodoEditButton').onclick = () => saveEditedTodo(todoId);
+            document.getElementById('editTodoModal').classList.remove('hidden');
+        };
+
+        window.saveEditedTodo = async (todoId) => {
             const newText = document.getElementById('editTodoInput').value.trim();
-            if (!newText) return;
-            await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id), { text: newText });
-            document.getElementById('editTodoModal').classList.add('hidden');
-        }
+            if (!newText) {
+                showCustomAlert("To-do item cannot be empty.");
+                return;
+            }
+            try {
+                const todoDocRef = doc(db, getPrivateTodosCollectionPath(currentUserId), todoId);
+                await updateDoc(todoDocRef, {
+                    text: newText
+                });
+                document.getElementById('editTodoModal').classList.add('hidden');
+                showCustomAlert("To-do item updated!");
+            } catch (error) {
+                console.error("Error saving edited todo:", error);
+                showCustomAlert("Failed to save edited to-do item: " + error.message);
+            }
+        };
 
-        // --- Feature Implementation: Attendance ---
+        // Attendance
+        let earlyYouthUsers = []; // Store Early Youth users for attendance and evaluations
+
         async function loadStudentsForAttendance() {
             const spinner = document.getElementById('attendanceStudentsSpinner');
-            const noStudents = document.getElementById('noStudentsForAttendance');
-            const container = document.getElementById('attendance-table-container');
+            const noStudentsMessage = document.getElementById('noStudentsForAttendance');
+            const tableContainer = document.getElementById('attendance-table-container');
+            spinner.classList.remove('hidden');
+            noStudentsMessage.classList.add('hidden');
+            tableContainer.innerHTML = '';
 
-            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                if (snapshot.empty) {
-                    noStudents.classList.remove('hidden');
-                    container.innerHTML = '';
+            try {
+                const usersCollectionRef = collection(db, PUBLIC_USERS_COLLECTION);
+                const q = query(usersCollectionRef, where("role", "==", "Early Youth"));
+                const querySnapshot = await getDocs(q);
+                
+                earlyYouthUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (earlyYouthUsers.length === 0) {
+                    noStudentsMessage.classList.remove('hidden');
+                    spinner.classList.add('hidden');
                     return;
                 }
-                noStudents.classList.add('hidden');
-                let tableHTML = `<table class="w-full text-left"><thead><tr class="border-b border-white/20"><th class="p-3">Name</th><th class="p-3 text-center">Status</th></tr></thead><tbody>`;
-                snapshot.docs.forEach(doc => {
-                    const student = { id: doc.id, ...doc.data() };
-                    tableHTML += `
-                        <tr class="border-b border-white/10" data-student-id="${student.id}">
-                            <td class="p-3">${student.name}</td>
-                            <td class="p-3 flex justify-center gap-2">
-                                <button onclick="toggleAttendanceStatus(this, 'present')" class="btn-status p-2 rounded-full bg-green-700 hover:bg-green-600 w-10 h-10 flex items-center justify-center"><i class="fas fa-check"></i></button>
-                                <button onclick="toggleAttendanceStatus(this, 'late')" class="btn-status p-2 rounded-full bg-yellow-600 hover:bg-yellow-500 w-10 h-10 flex items-center justify-center"><i class="fas fa-clock"></i></button>
-                                <button onclick="toggleAttendanceStatus(this, 'absent')" class="btn-status p-2 rounded-full bg-red-700 hover:bg-red-600 w-10 h-10 flex items-center justify-center"><i class="fas fa-times"></i></button>
+
+                let tableHtml = `
+                    <table class="min-w-full bg-white/10 rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-white/20">
+                                <th class="py-3 px-4 text-left text-sm font-semibold">Name</th>
+                                <th class="py-3 px-4 text-left text-sm font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                earlyYouthUsers.forEach(user => {
+                    tableHtml += `
+                        <tr class="border-b border-white/10 last:border-b-0">
+                            <td class="py-3 px-4">${user.name}</td>
+                            <td class="py-3 px-4">
+                                <div class="flex gap-2">
+                                    <button class="btn-status py-1 px-3 rounded-full text-xs" data-uid="${user.id}" data-status="Present" onclick="selectAttendanceStatus(this, '${user.id}', 'Present')">Present</button>
+                                    <button class="btn-status py-1 px-3 rounded-full text-xs" data-uid="${user.id}" data-status="Absent" onclick="selectAttendanceStatus(this, '${user.id}', 'Absent')">Absent</button>
+                                    <button class="btn-status py-1 px-3 rounded-full text-xs" data-uid="${user.id}" data-status="Excused" onclick="selectAttendanceStatus(this, '${user.id}', 'Excused')">Excused</button>
+                                </div>
                             </td>
                         </tr>
                     `;
                 });
-                tableHTML += `</tbody></table>`;
-                container.innerHTML = tableHTML;
-            });
-            unsubscribeListeners.push(unsub);
-        }
+                tableHtml += `</tbody></table>`;
+                tableContainer.innerHTML = tableHtml;
 
-        window.toggleAttendanceStatus = (btn, status) => {
-            const row = btn.closest('tr');
-            row.dataset.status = status;
-            // Remove 'selected' from siblings
-            row.querySelectorAll('.btn-status').forEach(b => b.classList.remove('selected'));
-            // Add 'selected' to clicked button
-            btn.classList.add('selected');
-        }
+                // Load existing attendance for the selected date and pre-fill
+                const attendanceDate = document.getElementById('attendanceDate').value;
+                await loadExistingAttendanceForDate(attendanceDate);
 
-        window.saveAttendance = async () => {
-            const date = document.getElementById('attendanceDate').value;
-            if (!date) return showCustomAlert("Please select a date.");
-
-            const attendanceData = {};
-            const rows = document.querySelectorAll('#attendance-table-container tr[data-student-id]');
-            let recordsToSave = 0;
-            rows.forEach(row => {
-                if (row.dataset.status) {
-                    attendanceData[row.dataset.studentId] = row.dataset.status;
-                    recordsToSave++;
-                }
-            });
-
-            if (recordsToSave === 0) return showCustomAlert("No attendance statuses have been set.");
-            
-            try {
-                const attendanceDocRef = doc(db, PUBLIC_ATTENDANCE_COLLECTION, date);
-                await setDoc(attendanceDocRef, { records: attendanceData, lastUpdated: serverTimestamp() }, { merge: true });
-                showCustomAlert("Attendance saved successfully!");
             } catch (error) {
-                console.error("Error saving attendance:", error);
-                showCustomAlert("Failed to save attendance.");
+                console.error("Error loading Early Youth users for attendance:", error);
+                showCustomAlert("Failed to load students for attendance: " + error.message);
+            } finally {
+                spinner.classList.add('hidden');
             }
         }
-        
-        function loadAllAttendanceRecords() {
-            const spinner = document.getElementById('attendanceViewSpinner');
-            const noRecords = document.getElementById('noAttendanceRecords');
-            const accordion = document.getElementById('attendanceAccordion');
 
-            const q = query(collection(db, PUBLIC_ATTENDANCE_COLLECTION));
-            const unsub = onSnapshot(q, async (snapshot) => {
-                spinner.classList.add('hidden');
-                if (snapshot.empty) {
-                    noRecords.classList.remove('hidden');
-                    accordion.innerHTML = '';
-                    return;
-                }
-                noRecords.classList.add('hidden');
-                accordion.innerHTML = '';
+        async function loadExistingAttendanceForDate(date) {
+            try {
+                const attendanceCollectionRef = collection(db, PUBLIC_ATTENDANCE_COLLECTION);
+                const q = query(attendanceCollectionRef, where("date", "==", date));
+                const querySnapshot = await getDocs(q);
+                const existingAttendance = {};
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    existingAttendance[data.studentUid] = data.status;
+                });
 
-                // Fetch all user names once to avoid multiple reads
-                const usersSnapshot = await getDocs(collection(db, PUBLIC_USERS_COLLECTION));
-                const userNames = {};
-                usersSnapshot.forEach(doc => userNames[doc.id] = doc.data().name);
-
-                snapshot.docs.sort((a, b) => b.id.localeCompare(a.id)).forEach(doc => {
-                    const date = doc.id;
-                    const records = doc.data().records;
-                    let recordsHtml = '<ul class="space-y-1">';
-                    for (const [studentId, status] of Object.entries(records)) {
-                        const studentName = userNames[studentId] || 'Unknown User';
-                        const statusColors = { present: 'text-green-400', absent: 'text-red-400', late: 'text-yellow-400' };
-                        recordsHtml += `<li class="flex justify-between"><span>${studentName}</span><span class="font-semibold ${statusColors[status] || ''}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></li>`;
+                earlyYouthUsers.forEach(user => {
+                    const status = existingAttendance[user.id];
+                    if (status) {
+                        const buttons = document.querySelectorAll(`button[data-uid="${user.id}"][data-status="${status}"]`);
+                        buttons.forEach(btn => {
+                            btn.classList.add('selected');
+                            if (status === 'Present') btn.classList.add('bg-green-500', 'border-green-700');
+                            else if (status === 'Absent') btn.classList.add('bg-red-500', 'border-red-700');
+                            else if (status === 'Excused') btn.classList.add('bg-yellow-500', 'border-yellow-700');
+                        });
                     }
-                    recordsHtml += '</ul>';
-                    
-                    accordion.innerHTML += `
-                        <div class="glass-effect rounded-lg">
-                            <div class="accordion-header flex justify-between items-center p-4" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                                <span class="font-bold">${date}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="p-4 border-t border-white/10 hidden">
-                                ${recordsHtml}
-                            </div>
-                        </div>
-                    `;
                 });
-            });
-            unsubscribeListeners.push(unsub);
-        }
 
-        // --- Feature Implementation: Evaluations ---
-        async function loadEYForEvaluation() {
-            const spinner = document.getElementById('evaluationsStudentsSpinner');
-            const noUsers = document.getElementById('noEYUsers');
-            const list = document.getElementById('evaluationList');
-
-            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    noUsers.classList.remove('hidden');
-                    return;
-                }
-                noUsers.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const student = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                            <span>${student.name}</span>
-                            <button onclick="showEvaluationModal('${student.id}', '${student.name}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">Evaluate</button>
-                        </li>
-                    `;
-                });
-            });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        window.showEvaluationModal = (studentId, studentName) => {
-            const modal = document.getElementById('evaluationModal');
-            document.getElementById('evalStudentName').textContent = studentName;
-            document.getElementById('evaluationValue').value = '';
-            modal.classList.remove('hidden');
-            document.getElementById('saveEvaluationButton').onclick = () => saveEvaluation(studentId, studentName);
-        }
-
-        async function saveEvaluation(studentId, studentName) {
-            const evaluation = document.getElementById('evaluationValue').value;
-            if (!evaluation) return showCustomAlert("Please select an evaluation.");
-
-            try {
-                await addDoc(collection(db, PUBLIC_EVALUATIONS_COLLECTION), {
-                    evaluatorId: currentUserId,
-                    evaluatorName: currentUserProfile.name,
-                    studentId: studentId,
-                    studentName: studentName,
-                    evaluation: evaluation,
-                    isExpired: false,
-                    createdAt: serverTimestamp()
-                });
-                showCustomAlert("Evaluation submitted successfully.");
-                document.getElementById('evaluationModal').classList.add('hidden');
             } catch (error) {
-                console.error("Error saving evaluation:", error);
-                showCustomAlert("Failed to save evaluation.");
+                console.error("Error loading existing attendance:", error);
+                showCustomAlert("Failed to load existing attendance: " + error.message);
             }
         }
 
-        function loadMyEvaluations() {
-            const spinner = document.getElementById('myEvaluationsSpinner');
-            const noEvals = document.getElementById('noMyEvaluations');
-            const list = document.getElementById('myEvaluationsList');
-            
-            const q = query(collection(db, PUBLIC_EVALUATIONS_COLLECTION), where("studentId", "==", currentUserId));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    noEvals.classList.remove('hidden');
-                    return;
-                }
-                noEvals.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const e = doc.data();
-                    const isExpired = e.isExpired;
-                    list.innerHTML += `
-                        <li class="bg-white/5 p-3 rounded-lg ${isExpired ? 'opacity-50' : ''}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-bold">${e.evaluation} ${isExpired ? '(Expired)' : ''}</p>
-                                    <p class="text-sm text-gray-400">From: ${e.evaluatorName}</p>
-                                </div>
-                                <p class="text-sm text-gray-400">${new Date(e.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                        </li>
-                    `;
-                });
+        window.selectAttendanceStatus = (button, uid, status) => {
+            const buttonsForUser = document.querySelectorAll(`button[data-uid="${uid}"]`);
+            buttonsForUser.forEach(btn => {
+                btn.classList.remove('selected', 'bg-green-500', 'border-green-700', 'bg-red-500', 'border-red-700', 'bg-yellow-500', 'border-yellow-700');
             });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        // --- Feature Implementation: Reporting ---
-        window.saveReport = async (reportId = null, currentEdits = 0) => {
-            const content = reportId ? document.getElementById('reportModalTextarea').value.trim() : document.getElementById('reportText').value.trim();
-            if (!content) return showCustomAlert("Report content cannot be empty.");
-
-            try {
-                if (reportId) { // Editing existing report
-                    if (currentEdits >= 3) {
-                        return showCustomAlert("This report cannot be edited anymore (3 edits max).");
-                    }
-                    await updateDoc(doc(db, PUBLIC_REPORTS_COLLECTION, reportId), {
-                        content: content,
-                        lastUpdatedAt: serverTimestamp(),
-                        editCount: currentEdits + 1
-                    });
-                    document.getElementById('reportModal').classList.add('hidden');
-                    showCustomAlert("Report updated successfully.");
-                } else { // Creating new report
-                    await addDoc(collection(db, PUBLIC_REPORTS_COLLECTION), {
-                        authorId: currentUserId,
-                        authorName: currentUserProfile.name,
-                        authorRole: currentUserProfile.role,
-                        content: content,
-                        editCount: 0,
-                        createdAt: serverTimestamp(),
-                        lastUpdatedAt: serverTimestamp()
-                    });
-                    document.getElementById('reportText').value = '';
-                    showCustomAlert("Report submitted successfully.");
-                }
-            } catch (error) {
-                console.error("Error saving report:", error);
-                showCustomAlert("Failed to save report.");
-            }
-        }
-
-        function loadMyReports() {
-            const spinner = document.getElementById('myReportsSpinner');
-            const noReports = document.getElementById('noMyReports');
-            const list = document.getElementById('reportList');
-            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION), where("authorId", "==", currentUserId));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    noReports.classList.remove('hidden');
-                    return;
-                }
-                noReports.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const report = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                            <span>Report from ${new Date(report.createdAt.seconds * 1000).toLocaleDateString()}</span>
-                            <button onclick='showReportModal(${JSON.stringify(report)})' class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">View/Edit</button>
-                        </li>`;
-                });
-            });
-            unsubscribeListeners.push(unsub);
-        }
-
-        function loadVisibleReports() {
-            const spinner = document.getElementById('allReportsSpinner');
-            const noReports = document.getElementById('noVisibleReports');
-            const list = document.getElementById('visibleReports');
-            
-            // All users except EY can view reports. Logic can be refined here if needed.
-            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    noReports.classList.remove('hidden');
-                    return;
-                }
-                noReports.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const report = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                            <div>
-                                <p>Report by ${report.authorName} (${report.authorRole})</p>
-                                <p class="text-xs text-gray-400">On: ${new Date(report.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                            <button onclick='showReportModal(${JSON.stringify(report)})' class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">View</button>
-                        </li>`;
-                });
-            });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        window.showReportModal = (report) => {
-            const modal = document.getElementById('reportModal');
-            document.getElementById('reportAuthor').textContent = report.authorName;
-            document.getElementById('reportDate').textContent = new Date(report.createdAt.seconds * 1000).toLocaleString();
-            document.getElementById('reportModalTextarea').value = report.content;
-            document.getElementById('reportModalTextarea').readOnly = true;
-
-            const editCount = report.editCount || 0;
-            const editInfo = document.getElementById('editCountInfo');
-            editInfo.textContent = `Edits: ${editCount}/3. Last updated: ${new Date(report.lastUpdatedAt.seconds * 1000).toLocaleString()}`;
-            
-            const editButton = document.getElementById('editReportButton');
-            const saveButton = document.getElementById('saveEditedReportButton');
-            
-            // Show edit button only if user is the author, not EY/RC, and has edits left
-            const canEdit = report.authorId === currentUserId && !['Early Youth', 'RC'].includes(currentUserProfile.role) && editCount < 3;
-            editButton.classList.toggle('hidden', !canEdit);
-            saveButton.classList.add('hidden');
-
-            editButton.onclick = () => {
-                document.getElementById('reportModalTextarea').readOnly = false;
-                editButton.classList.add('hidden');
-                saveButton.classList.remove('hidden');
-            };
-            saveButton.onclick = () => saveReport(report.id, editCount);
-
-            modal.classList.remove('hidden');
-        }
-
-        // --- Utility Functions ---
-        window.showCustomAlert = (message, title = "Message") => {
-            document.getElementById('alertModalLabel').textContent = title;
-            document.getElementById('alertModalBody').innerHTML = message; // Use innerHTML to allow for links
-            document.getElementById('alertModal').classList.remove('hidden');
+            button.classList.add('selected');
+            if (status === 'Present') button.classList.add('bg-green-500', 'border-green-700');
+            else if (status === 'Absent') button.classList.add('bg-red-500', 'border-red-700');
+            else if (status === 'Excused') button.classList.add('bg-yellow-500', 'border-yellow-700');
         };
 
-        // --- App Entry Point ---
-        document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
+        window.saveAttendance = async () => {
+            const attendanceDate = document.getElementById('attendanceDate').value;
+            const attendanceRecords = [];
+            let allStudentsMarked = true;
 
+            earlyYouthUsers.forEach(user => {
+                const selectedButton = document.querySelector(`button[data-uid="${user.id}"].selected`);
+                if (selectedButton) {
+                    attendanceRecords.push({
+                        studentUid: user.id,
+                        studentName: user.name,
+                        status: selectedButton.dataset.status,
+                        date: attendanceDate,
+                        instructorUid: currentUserId,
+                        instructorName: currentUserProfile.name,
+                        timestamp: serverTimestamp()
+                    });
+                } else {
+                    allStudentsMarked = false;
+                }
+            });
+
+            if (!allStudentsMarked) {
+                showCustomAlert("Please mark attendance for all Early Youth users before saving.");
+                return;
+            }
+
+            if (attendanceRecords.length === 0) {
+                showCustomAlert("No attendance records to save.");
+                return;
+            }
+
+            try {
+                const batch = writeBatch(db);
+                const attendanceCollectionRef = collection(db, PUBLIC_ATTENDANCE_COLLECTION);
+
+                // Delete existing records for this date to prevent duplicates/updates
+                const existingQuery = query(attendanceCollectionRef, where("date", "==", attendanceDate));
+                const existingSnapshot = await getDocs(existingQuery);
+                existingSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                // Add new records
+                attendanceRecords.forEach(record => {
+                    const newDocRef = doc(attendanceCollectionRef); // Let Firestore generate ID
+                    batch.set(newDocRef, record);
+                });
+
+                await batch.commit();
+                showCustomAlert("Attendance saved successfully!");
+                // Optionally reload to clear selections or show confirmation
+                loadStudentsForAttendance(); // Reload to reflect saved state
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                showCustomAlert("Failed to save attendance: " + error.message);
+            }
+        };
+
+        function loadAllAttendanceRecords() {
+            const attendanceAccordion = document.getElementById('attendanceAccordion');
+            const noRecordsMessage = document.getElementById('noAttendanceRecords');
+            const spinner = document.getElementById('attendanceViewSpinner');
+            spinner.classList.remove('hidden');
+            noRecordsMessage.classList.add('hidden');
+            attendanceAccordion.innerHTML = '';
+
+            const attendanceCollectionRef = collection(db, PUBLIC_ATTENDANCE_COLLECTION);
+            const q = query(attendanceCollectionRef);
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const recordsByDate = {};
+                snapshot.forEach(doc => {
+                    const record = doc.data();
+                    const date = record.date;
+                    if (!recordsByDate[date]) {
+                        recordsByDate[date] = [];
+                    }
+                    recordsByDate[date].push(record);
+                });
+
+                const sortedDates = Object.keys(recordsByDate).sort((a, b) => b.localeCompare(a)); // Newest first
+
+                attendanceAccordion.innerHTML = '';
+                if (sortedDates.length === 0) {
+                    noRecordsMessage.classList.remove('hidden');
+                } else {
+                    noRecordsMessage.classList.add('hidden');
+                    sortedDates.forEach(date => {
+                        const recordsForDate = recordsByDate[date];
+                        const header = document.createElement('div');
+                        header.className = 'accordion-header bg-white/10 p-4 rounded-lg flex justify-between items-center cursor-pointer mb-1';
+                        header.innerHTML = `
+                            <h5 class="font-semibold">${date} Attendance</h5>
+                            <i class="fas fa-chevron-down"></i>
+                        `;
+                        header.onclick = (e) => {
+                            const content = header.nextElementSibling;
+                            content.classList.toggle('hidden');
+                            header.querySelector('i').classList.toggle('fa-chevron-down');
+                            header.querySelector('i').classList.toggle('fa-chevron-up');
+                        };
+
+                        const content = document.createElement('div');
+                        content.className = 'accordion-content bg-white/5 p-4 rounded-lg hidden';
+                        
+                        let contentHtml = `<table class="min-w-full text-sm"><thead><tr class="border-b border-white/10"><th class="py-2 px-2 text-left">Student</th><th class="py-2 px-2 text-left">Status</th><th class="py-2 px-2 text-left">Instructor</th></tr></thead><tbody>`;
+                        recordsForDate.forEach(record => {
+                            contentHtml += `
+                                <tr>
+                                    <td class="py-1 px-2">${record.studentName}</td>
+                                    <td class="py-1 px-2">
+                                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold
+                                            ${record.status === 'Present' ? 'bg-green-500/30 text-green-300' : ''}
+                                            ${record.status === 'Absent' ? 'bg-red-500/30 text-red-300' : ''}
+                                            ${record.status === 'Excused' ? 'bg-yellow-500/30 text-yellow-300' : ''}">
+                                            ${record.status}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 px-2">${record.instructorName}</td>
+                                </tr>
+                            `;
+                        });
+                        contentHtml += `</tbody></table>`;
+                        content.innerHTML = contentHtml;
+
+                        attendanceAccordion.appendChild(header);
+                        attendanceAccordion.appendChild(content);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading attendance records:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load attendance records: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        // Evaluations
+        async function loadEYForEvaluation() {
+            const evaluationList = document.getElementById('evaluationList');
+            const noEYUsersMessage = document.getElementById('noEYUsers');
+            const spinner = document.getElementById('evaluationsStudentsSpinner');
+            spinner.classList.remove('hidden');
+            noEYUsersMessage.classList.add('hidden');
+            evaluationList.innerHTML = '';
+
+            try {
+                const usersCollectionRef = collection(db, PUBLIC_USERS_COLLECTION);
+                const q = query(usersCollectionRef, where("role", "==", "Early Youth"));
+                const querySnapshot = await getDocs(q);
+                
+                earlyYouthUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Reuse for evaluations
+
+                if (earlyYouthUsers.length === 0) {
+                    noEYUsersMessage.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                    return;
+                }
+
+                earlyYouthUsers.forEach(user => {
+                    const li = document.createElement('li');
+                    li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                    li.innerHTML = `
+                        <span>${user.name}</span>
+                        <button class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg text-sm" onclick="showEvaluationModal('${user.id}', '${user.name}')">Give Evaluation</button>
+                    `;
+                    evaluationList.appendChild(li);
+                });
+
+            } catch (error) {
+                console.error("Error loading Early Youth users for evaluation:", error);
+                showCustomAlert("Failed to load students for evaluation: " + error.message);
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        }
+
+        window.showEvaluationModal = (studentUid, studentName) => {
+            document.getElementById('evalStudentName').textContent = studentName;
+            document.getElementById('evaluationValue').value = ''; // Reset dropdown
+            document.getElementById('saveEvaluationButton').onclick = () => saveEvaluation(studentUid, studentName);
+            document.getElementById('evaluationModal').classList.remove('hidden');
+        };
+
+        window.saveEvaluation = async (studentUid, studentName) => {
+            const evaluationValue = document.getElementById('evaluationValue').value;
+            if (!evaluationValue) {
+                showCustomAlert("Please select an evaluation value.");
+                return;
+            }
+
+            try {
+                const evaluationsCollectionRef = collection(db, PUBLIC_EVALUATIONS_COLLECTION);
+                await addDoc(evaluationsCollectionRef, {
+                    studentUid: studentUid,
+                    studentName: studentName,
+                    evaluatorUid: currentUserId,
+                    evaluatorName: currentUserProfile.name,
+                    evaluation: evaluationValue,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('evaluationModal').classList.add('hidden');
+                showCustomAlert("Evaluation submitted successfully!");
+            } catch (error) {
+                console.error("Error saving evaluation:", error);
+                showCustomAlert("Failed to save evaluation: " + error.message);
+            }
+        };
+
+        function loadMyEvaluations() {
+            const myEvaluationsList = document.getElementById('myEvaluationsList');
+            const noMyEvaluationsMessage = document.getElementById('noMyEvaluations');
+            const spinner = document.getElementById('myEvaluationsSpinner');
+            spinner.classList.remove('hidden');
+            noMyEvaluationsMessage.classList.add('hidden');
+            myEvaluationsList.innerHTML = '';
+
+            const evaluationsCollectionRef = collection(db, PUBLIC_EVALUATIONS_COLLECTION);
+            const q = query(evaluationsCollectionRef, where("studentUid", "==", currentUserId));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                myEvaluationsList.innerHTML = '';
+                if (snapshot.empty) {
+                    noMyEvaluationsMessage.classList.remove('hidden');
+                } else {
+                    noMyEvaluationsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const evaluation = doc.data();
+                        const date = evaluation.createdAt ? new Date(evaluation.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg';
+                        li.innerHTML = `
+                            <p class="font-semibold">Evaluation: ${evaluation.evaluation}</p>
+                            <p class="text-sm text-gray-300">By: ${evaluation.evaluatorName} on ${date}</p>
+                        `;
+                        myEvaluationsList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading my evaluations:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load your evaluations: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        // Reports
+        window.saveReport = async () => {
+            const reportText = document.getElementById('reportText').value.trim();
+            if (!reportText) {
+                showCustomAlert("Report cannot be empty.");
+                return;
+            }
+            try {
+                const reportsCollectionRef = collection(db, PUBLIC_REPORTS_COLLECTION);
+                await addDoc(reportsCollectionRef, {
+                    authorUid: currentUserId,
+                    authorName: currentUserProfile.name,
+                    content: reportText,
+                    createdAt: serverTimestamp(),
+                    lastEditedAt: serverTimestamp(),
+                    editCount: 0
+                });
+                document.getElementById('reportText').value = ''; // Clear textarea
+                showCustomAlert("Report submitted successfully!");
+            } catch (error) {
+                console.error("Error saving report:", error);
+                showCustomAlert("Failed to submit report: " + error.message);
+            }
+        };
+
+        function loadMyReports() {
+            const reportList = document.getElementById('reportList');
+            const noMyReportsMessage = document.getElementById('noMyReports');
+            const spinner = document.getElementById('myReportsSpinner');
+            spinner.classList.remove('hidden');
+            noMyReportsMessage.classList.add('hidden');
+            reportList.innerHTML = '';
+
+            const reportsCollectionRef = collection(db, PUBLIC_REPORTS_COLLECTION);
+            const q = query(reportsCollectionRef, where("authorUid", "==", currentUserId));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                reportList.innerHTML = '';
+                if (snapshot.empty) {
+                    noMyReportsMessage.classList.remove('hidden');
+                } else {
+                    noMyReportsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const report = doc.data();
+                        const date = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="font-semibold">${report.content.substring(0, 70)}...</p>
+                                <p class="text-sm text-gray-300">Submitted on: ${date}</p>
+                            </div>
+                            <div class="flex items-center ml-4">
+                                <button class="text-blue-400 hover:text-blue-600 mr-2" onclick="viewReport('${doc.id}', true)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="text-red-400 hover:text-red-600" onclick="deleteReport('${doc.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        reportList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading my reports:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load your reports: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.deleteReport = async (reportId) => {
+            try {
+                const reportDocRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+                await deleteDoc(reportDocRef);
+                showCustomAlert("Report deleted.");
+            } catch (error) {
+                console.error("Error deleting report:", error);
+                showCustomAlert("Failed to delete report: " + error.message);
+            }
+        };
+
+        function loadVisibleReports() {
+            const visibleReportsList = document.getElementById('visibleReports');
+            const noVisibleReportsMessage = document.getElementById('noVisibleReports');
+            const spinner = document.getElementById('allReportsSpinner');
+            spinner.classList.remove('hidden');
+            noVisibleReportsMessage.classList.add('hidden');
+            visibleReportsList.innerHTML = '';
+
+            const reportsCollectionRef = collection(db, PUBLIC_REPORTS_COLLECTION);
+            const q = query(reportsCollectionRef); // Fetch all for viewable
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                visibleReportsList.innerHTML = '';
+                if (snapshot.empty) {
+                    noVisibleReportsMessage.classList.remove('hidden');
+                } else {
+                    noVisibleReportsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const report = doc.data();
+                        const date = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="font-semibold">${report.content.substring(0, 70)}...</p>
+                                <p class="text-sm text-gray-300">By: ${report.authorName} on ${date}</p>
+                            </div>
+                            <div class="ml-4">
+                                <button class="text-blue-400 hover:text-blue-600" onclick="viewReport('${doc.id}', false)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        `;
+                        visibleReportsList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading visible reports:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load reports: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.viewReport = async (reportId, canEdit) => {
+            try {
+                const reportDocRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+                const reportSnap = await getDoc(reportDocRef);
+
+                if (reportSnap.exists()) {
+                    const report = reportSnap.data();
+                    document.getElementById('reportAuthor').textContent = report.authorName;
+                    document.getElementById('reportDate').textContent = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                    document.getElementById('reportModalTextarea').value = report.content;
+                    document.getElementById('editCountInfo').textContent = `Edit Count: ${report.editCount || 0}`;
+
+                    const editButton = document.getElementById('editReportButton');
+                    const saveButton = document.getElementById('saveEditedReportButton');
+                    const textarea = document.getElementById('reportModalTextarea');
+
+                    if (canEdit && currentUserProfile.uid === report.authorUid) { // Only author can edit
+                        editButton.classList.remove('hidden');
+                        saveButton.classList.add('hidden');
+                        textarea.readOnly = true;
+
+                        editButton.onclick = () => {
+                            textarea.readOnly = false;
+                            editButton.classList.add('hidden');
+                            saveButton.classList.remove('hidden');
+                            textarea.focus();
+                        };
+                        saveButton.onclick = () => saveEditedReport(reportId, report.editCount || 0);
+                    } else {
+                        editButton.classList.add('hidden');
+                        saveButton.classList.add('hidden');
+                        textarea.readOnly = true;
+                    }
+                    document.getElementById('reportModal').classList.remove('hidden');
+                } else {
+                    showCustomAlert("Report not found.");
+                }
+            } catch (error) {
+                console.error("Error viewing report:", error);
+                showCustomAlert("Failed to view report: " + error.message);
+            }
+        };
+
+        window.saveEditedReport = async (reportId, currentEditCount) => {
+            const newContent = document.getElementById('reportModalTextarea').value.trim();
+            if (!newContent) {
+                showCustomAlert("Report content cannot be empty.");
+                return;
+            }
+            try {
+                const reportDocRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+                await updateDoc(reportDocRef, {
+                    content: newContent,
+                    lastEditedAt: serverTimestamp(),
+                    editCount: (currentEditCount || 0) + 1
+                });
+                document.getElementById('reportModal').classList.add('hidden');
+                showCustomAlert("Report updated successfully!");
+            } catch (error) {
+                console.error("Error saving edited report:", error);
+                showCustomAlert("Failed to save changes: " + error.message);
+            }
+        };
+
+        // --- Initial Call ---
+        initializeAppAndAuth();
     </script>
 </body>
 </html>
