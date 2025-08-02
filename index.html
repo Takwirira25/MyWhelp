@@ -62,17 +62,23 @@
 
             <div id="returning-user-form" class="hidden">
                 <div class="relative mb-4">
-                    <i class="fas fa-id-card absolute top-3.5 left-4 text-gray-400"></i>
-                    <input type="text" id="userIDInput" placeholder="Enter your User ID" class="form-input w-full pl-12 pr-4 py-3 rounded-lg">
+                    <i class="fas fa-envelope absolute top-3.5 left-4 text-gray-400"></i>
+                    <input type="email" id="loginEmail" placeholder="Email" class="form-input w-full pl-12 pr-4 py-3 rounded-lg">
+                </div>
+                <div class="relative mb-4">
+                    <i class="fas fa-lock absolute top-3.5 left-4 text-gray-400"></i>
+                    <input type="password" id="loginPassword" placeholder="Password" class="form-input w-full pl-12 pr-4 py-3 rounded-lg">
                 </div>
                 <button id="login-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mb-2" onclick="loginUser()">Login</button>
-                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotPasswordModal()">Forgot ID?</button>
+                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotPasswordModal()">Forgot Password?</button>
                 <button class="w-full bg-transparent hover:bg-white/10 border border-white/20 text-white font-bold py-2 px-4 rounded-lg transition duration-300" onclick="goBackToSelection()">Back</button>
             </div>
 
             <div id="new-user-form" class="hidden">
                 <input type="text" id="firstName" placeholder="First Name" class="form-input w-full mb-3 p-3 rounded-lg">
                 <input type="text" id="lastName" placeholder="Last Name" class="form-input w-full mb-3 p-3 rounded-lg">
+                <input type="email" id="email" placeholder="Email" class="form-input w-full mb-3 p-3 rounded-lg">
+                <input type="password" id="password" placeholder="Password" class="form-input w-full mb-3 p-3 rounded-lg">
                 <select id="userRole" class="form-input w-full p-3 rounded-lg">
                     <option value="" disabled selected>Select your role</option>
                     <option value="Early Youth">Early Youth</option>
@@ -186,12 +192,20 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Environment & Config ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mywhelp-dev-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." };
+        // Replaced dynamic firebaseConfig with the user-provided hardcoded version
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOc_f94DMGC5XVI2rf1baKp5lWJWnkrKo",
+            authDomain: "samrad-quiz.firebaseapp.com",
+            projectId: "samrad-quiz",
+            storageBucket: "samrad-quiz.firebasestorage.app",
+            messagingSenderId: "853162839858",
+            appId: "1:853162839858:web:9eb0fde5b5a442a067d12b"
+        };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // --- Firebase Services & State ---
@@ -236,12 +250,10 @@
                     }
                 });
 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // Fallback for local development if no token is provided
-                    await signInAnonymously(auth);
-                }
+                // Removed signInAnonymously and signInWithCustomToken as per user's request for email/password only auth
+                // and to resolve custom-token-mismatch error with hardcoded firebaseConfig.
+                // The app will now start not signed in, and rely on explicit login/registration.
+
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
                 showCustomAlert("Critical Error: Could not initialize the application.");
@@ -297,7 +309,7 @@
             document.getElementById('user-type-selection').classList.add('hidden');
             document.getElementById('returning-user-form').classList.remove('hidden');
             document.getElementById('new-user-form').classList.add('hidden');
-            document.getElementById('login-intro-text').textContent = "Enter your unique MyWhelp ID.";
+            document.getElementById('login-intro-text').textContent = "Enter your email and password.";
         };
 
         window.showNewUserForm = () => {
@@ -485,67 +497,59 @@
         window.registerUser = async () => {
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
             const role = document.getElementById('userRole').value;
 
-            if (!firstName || !lastName || !role) {
-                return showCustomAlert("First Name, Last Name, and Role are required.");
-            }
-            if (!auth.currentUser) {
-                return showCustomAlert("Authentication not ready. Please wait and try again.");
+            if (!firstName || !lastName || !role || !email || !password) {
+                return showCustomAlert("All fields are required.");
             }
 
-            const mywhelpId = generateMyWhelpId(firstName, lastName, role);
-            const userUid = auth.currentUser.uid;
-            const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userUid);
-            
             try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userUid = userCredential.user.uid;
+
+                const mywhelpId = generateMyWhelpId(firstName, lastName, role);
+                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userUid);
+
                 await setDoc(userDocRef, {
-                    mywhelpId: mywhelpId,
+                    mywhelpId,
                     name: `${firstName} ${lastName}`,
-                    firstName: firstName,
-                    lastName: lastName,
-                    role: role,
+                    firstName,
+                    lastName,
+                    email,
+                    role,
                     createdAt: serverTimestamp()
                 });
-                showCustomAlert(`Registration Successful! Your new ID is: ${mywhelpId}. Please save it securely.`);
+
                 await loadUserProfile(userUid);
+                showCustomAlert(`Registration successful! Your ID is: ${mywhelpId}`);
             } catch (error) {
-                console.error("Registration Error:", error);
-                showCustomAlert("Could not register user. Please try again.");
+                console.error("Registration error:", error);
+                // Check for specific error codes to provide more user-friendly messages
+                if (error.code === 'auth/email-already-in-use') {
+                    showCustomAlert("This email is already in use. Please try logging in or use a different email.", "Registration Failed");
+                } else if (error.code === 'auth/weak-password') {
+                    showCustomAlert("Password is too weak. Please use a stronger password (at least 6 characters).", "Registration Failed");
+                } else {
+                    showCustomAlert("Failed to register: " + error.message, "Registration Failed");
+                }
             }
         };
         
         window.loginUser = async () => {
-            const mywhelpId = document.getElementById('userIDInput').value.trim().toUpperCase();
-            if (!mywhelpId) return showCustomAlert("Please enter your User ID.");
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) return showCustomAlert("Please enter both email and password.");
 
             try {
-                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("mywhelpId", "==", mywhelpId));
-                const querySnapshot = await getDocs(q);
-                
-                if (querySnapshot.empty) {
-                    return showCustomAlert("Invalid User ID. Please check and try again.");
-                }
-                
-                // IMPORTANT: This login flow assumes the device/browser is trusted for the currently
-                // signed-in Firebase anonymous user. It finds the profile by MyWhelp ID and then
-                // associates this profile with the *current* Firebase Auth UID by overwriting it.
-                // This is a simplified approach. A more secure system would use custom tokens
-                // or proper email/password authentication.
-                const userDoc = querySnapshot.docs[0];
-                const foundUid = userDoc.id;
-
-                if (foundUid !== currentUserId) {
-                    // This case is tricky with anonymous auth. For simplicity, we'll just load the profile.
-                    // In a real app, this would require re-authentication.
-                    console.warn(`Logging in user with MyWhelpID ${mywhelpId} which has a different UID (${foundUid}) than the current auth user (${currentUserId}). Loading profile anyway for this app's flow.`);
-                }
-                
-                await loadUserProfile(foundUid);
-
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userUid = userCredential.user.uid;
+                await loadUserProfile(userUid);
             } catch (error) {
                 console.error("Login error:", error);
-                showCustomAlert("An error occurred during login.");
+                showCustomAlert("Failed to login: " + error.message);
             }
         };
 
@@ -564,6 +568,8 @@
         }
         
         // --- Feature Implementation: Forgot ID ---
+        // NOTE: The "Forgot ID" functionality is now "Forgot Password" but the underlying logic for MyWhelp ID recovery is retained.
+        // For a full "Forgot Password" flow, Firebase's sendPasswordResetEmail would be used.
         window.closeForgotIdModal = () => {
             document.getElementById('forgotIdModal').classList.add('hidden');
             document.getElementById('forgotIdStep1').classList.remove('hidden');
@@ -666,8 +672,13 @@
         }
         
         window.deleteNote = async (noteId) => {
-            if (!confirm("Are you sure you want to delete this note?")) return;
+            // Using showCustomAlert instead of confirm for consistency
+            showCustomAlert("Are you sure you want to delete this note? <br><br><button class='bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg mr-2' onclick='deleteNoteConfirmed(\"" + noteId + "\")'>Yes, Delete</button><button class='bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg' onclick='document.getElementById(\"alertModal\").classList.add(\"hidden\")'>Cancel</button>", "Confirm Delete");
+        }
+
+        window.deleteNoteConfirmed = async (noteId) => {
             await deleteDoc(doc(db, getPrivateNotesCollectionPath(currentUserId), noteId));
+            document.getElementById('alertModal').classList.add('hidden'); // Close the alert after action
         }
 
         window.addTodoItem = async () => {
@@ -710,8 +721,12 @@
             await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id), { completed: !currentStatus });
         }
         window.deleteTodo = async (id) => {
-             if (!confirm("Are you sure you want to delete this to-do item?")) return;
+            // Using showCustomAlert instead of confirm for consistency
+            showCustomAlert("Are you sure you want to delete this to-do item? <br><br><button class='bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg mr-2' onclick='deleteTodoConfirmed(\"" + id + "\")'>Yes, Delete</button><button class='bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg' onclick='document.getElementById(\"alertModal\").classList.add(\"hidden\")'>Cancel</button>", "Confirm Delete");
+        }
+        window.deleteTodoConfirmed = async (id) => {
             await deleteDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id));
+            document.getElementById('alertModal').classList.add('hidden'); // Close the alert after action
         }
         window.showEditTodoModal = (id, currentText) => {
             const modal = document.getElementById('editTodoModal');
