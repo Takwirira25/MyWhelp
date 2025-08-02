@@ -45,6 +45,10 @@
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
         .accordion-header { cursor: pointer; }
+        .btn-loading {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-800 to-purple-800 text-white min-h-screen flex items-center justify-center p-4">
@@ -56,8 +60,8 @@
             <p id="login-intro-text" class="text-center text-gray-300 mb-6">Are you a new or returning user?</p>
 
             <div id="user-type-selection" class="flex flex-col gap-4">
-                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center" onclick="showReturningUserForm()"><i class="fas fa-sign-in-alt mr-2"></i>I'm a Returning User</button>
-                <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center" onclick="showNewUserForm()"><i class="fas fa-user-plus mr-2"></i>I'm a New User</button>
+                <button id="returningUserButton" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center btn-loading" onclick="showReturningUserForm()" disabled><i class="fas fa-sign-in-alt mr-2"></i>I'm a Returning User</button>
+                <button id="newUserButton" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center btn-loading" onclick="showNewUserForm()" disabled><i class="fas fa-user-plus mr-2"></i>I'm a New User</button>
             </div>
 
             <div id="returning-user-form" class="hidden">
@@ -200,6 +204,7 @@
         let currentUserProfile = {}; // MyWhelp app user profile
         let unsubscribeListeners = []; // To detach listeners on logout
         let forgotIdChallengeData = {}; // To hold data for the forgot ID challenge
+        let authReady = false; // Flag to indicate if Firebase Auth is initialized
 
         // --- Firestore Paths ---
         const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
@@ -226,14 +231,16 @@
                         if (userDocSnap.exists()) {
                             await loadUserProfile(currentUserId);
                         } else {
-                            console.log("Authenticated user has no profile. Showing login/register screen.");
-                            showLoginContent();
+                            console.log("Authenticated user has no profile. Showing login/register selection.");
+                            showLoginSelection(); // Show the initial selection screen
                         }
                     } else {
                         console.log("User signed out.");
                         cleanupOnLogout();
-                        showLoginContent();
+                        showLoginSelection(); // Show the initial selection screen
                     }
+                    authReady = true; // Auth is ready after the initial state check
+                    enableAuthButtons();
                 });
 
                 if (initialAuthToken) {
@@ -259,7 +266,7 @@
                 showMainContent();
             } else {
                 console.warn("Attempted to load a non-existent profile for UID:", uid);
-                showLoginContent(); // Force back to login if profile is missing
+                showLoginSelection(); // Force back to login selection if profile is missing
             }
         }
         
@@ -278,21 +285,22 @@
             currentUserId = null;
         }
 
-        // --- UI State Management ---
-        function showLoginContent() {
+        // --- UI State Management for Login/Registration ---
+        function showLoginSelection() {
             document.getElementById('login-card').classList.remove('hidden');
             document.getElementById('main-content').classList.add('hidden');
-            goBackToSelection();
+            document.getElementById('user-type-selection').classList.remove('hidden');
+            document.getElementById('returning-user-form').classList.add('hidden');
+            document.getElementById('new-user-form').classList.add('hidden');
+            document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+            // Clear inputs
+            document.getElementById('userIDInput').value = '';
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('userRole').value = '';
+            enableAuthButtons(); // Ensure buttons are enabled if auth is ready
         }
 
-        function showMainContent() {
-            document.getElementById('login-card').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('hidden');
-            document.getElementById('welcomeText').textContent = `Welcome, ${currentUserProfile.name}!`;
-            document.getElementById('userIdDisplay').textContent = `ID: ${currentUserProfile.mywhelpId}`;
-            setupDynamicUI();
-        }
-        
         window.showReturningUserForm = () => {
             document.getElementById('user-type-selection').classList.add('hidden');
             document.getElementById('returning-user-form').classList.remove('hidden');
@@ -308,11 +316,32 @@
         };
 
         window.goBackToSelection = () => {
-            document.getElementById('user-type-selection').classList.remove('hidden');
-            document.getElementById('returning-user-form').classList.add('hidden');
-            document.getElementById('new-user-form').classList.add('hidden');
-            document.getElementById('login-intro-text').textContent = "Are you a new or returning user?";
+            showLoginSelection();
         };
+
+        function showMainContent() {
+            document.getElementById('login-card').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('welcomeText').textContent = `Welcome, ${currentUserProfile.name}!`;
+            document.getElementById('userIdDisplay').textContent = `ID: ${currentUserProfile.mywhelpId}`;
+            setupDynamicUI();
+        }
+
+        function enableAuthButtons() {
+            const returningButton = document.getElementById('returningUserButton');
+            const newButton = document.getElementById('newUserButton');
+            if (authReady) {
+                returningButton.disabled = false;
+                returningButton.classList.remove('btn-loading');
+                newButton.disabled = false;
+                newButton.classList.remove('btn-loading');
+            } else {
+                returningButton.disabled = true;
+                returningButton.classList.add('btn-loading');
+                newButton.disabled = true;
+                newButton.classList.add('btn-loading');
+            }
+        }
         
         // --- Dynamic UI based on Role ---
         function setupDynamicUI() {
@@ -419,7 +448,7 @@
                 <input type="date" id="attendanceDate" value="${today}" class="form-input p-3 rounded-lg mb-4 w-full md:w-auto">
                 ${getSpinner('attendanceStudentsSpinner')}
                 <div id="attendance-table-container" class="overflow-x-auto"></div>
-                 <p id="noStudentsForAttendance" class="text-gray-400 text-center mt-4 hidden">No Early Youth users found to take attendance for.</p>
+                <p id="noStudentsForAttendance" class="text-gray-400 text-center mt-4 hidden">No Early Youth users found to take attendance for.</p>
                 <div class="flex justify-end mt-4">
                     <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveAttendance()"><i class="fas fa-save mr-2"></i>Save Attendance</button>
                 </div>
@@ -436,7 +465,7 @@
         }
         
         function getGiveEvaluationsContent() {
-             return `
+            return `
                 <h4 class="text-xl font-bold mb-4">Give Evaluation to Early Youth</h4>
                 ${getSpinner('evaluationsStudentsSpinner')}
                 <ul id="evaluationList" class="space-y-3"></ul>
@@ -481,7 +510,7 @@
             `;
         }
         
-        // --- Feature Implementation: Registration & Login ---
+        // --- Feature Implementation: Authentication Logic ---
         window.registerUser = async () => {
             const firstName = document.getElementById('firstName').value.trim();
             const lastName = document.getElementById('lastName').value.trim();
@@ -494,11 +523,24 @@
                 return showCustomAlert("Authentication not ready. Please wait and try again.");
             }
 
-            const mywhelpId = generateMyWhelpId(firstName, lastName, role);
+            let mywhelpId = generateMyWhelpId(firstName, lastName, role);
             const userUid = auth.currentUser.uid;
             const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userUid);
             
             try {
+                // Ensure the generated ID is unique within the public users collection
+                let isUnique = false;
+                while (!isUnique) {
+                    const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("mywhelpId", "==", mywhelpId));
+                    const existingIdSnapshot = await getDocs(q);
+                    if (existingIdSnapshot.empty) {
+                        isUnique = true;
+                    } else {
+                        // If ID exists, regenerate and try again
+                        mywhelpId = generateMyWhelpId(firstName, lastName, role);
+                    }
+                }
+
                 await setDoc(userDocRef, {
                     mywhelpId: mywhelpId,
                     name: `${firstName} ${lastName}`,
@@ -524,7 +566,7 @@
                 const querySnapshot = await getDocs(q);
                 
                 if (querySnapshot.empty) {
-                    return showCustomAlert("Invalid User ID. Please check and try again.");
+                    return showCustomAlert("Invalid User ID. Please check and try again, or create a new account.");
                 }
                 
                 // IMPORTANT: This login flow assumes the device/browser is trusted for the currently
@@ -551,21 +593,25 @@
 
         function generateMyWhelpId(firstName, lastName, role) {
             const initials = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase();
-            const randomNums = Math.floor(100 + Math.random() * 900);
-            const rolePrefixes = {
-                'Early Youth': 'EY',
-                'Early Youth Instructor': 'EI',
-                'Early Youth Advisor': 'EA',
-                'TC': 'TC',
-                'RC': 'RC'
-            };
-            const prefix = rolePrefixes[role] || 'XX';
-            return `${prefix}${randomNums}${initials}`;
+            const randomNums = Math.floor(1000 + Math.random() * 9000); // 4 random digits
+            let rolePrefix = '';
+            if (role === 'Early Youth') rolePrefix = 'EY';
+            else if (role === 'Early Youth Instructor') rolePrefix = 'EYI';
+            else if (role === 'Early Youth Advisor') rolePrefix = 'EYA';
+            else if (role === 'TC') rolePrefix = 'TC';
+            else if (role === 'RC') rolePrefix = 'RC';
+            
+            return `${initials}${rolePrefix}${randomNums}`; // No dashes
         }
         
-        // --- Feature Implementation: Forgot ID ---
-        window.closeForgotIdModal = () => {
-            document.getElementById('forgotIdModal').classList.add('hidden');
+        // --- Modals & Alerts ---
+        window.showCustomAlert = (message, title = "Message") => {
+            document.getElementById('alertModalLabel').textContent = title;
+            document.getElementById('alertModalBody').textContent = message;
+            document.getElementById('alertModal').classList.remove('hidden');
+        };
+
+        window.showForgotPasswordModal = () => {
             document.getElementById('forgotIdStep1').classList.remove('hidden');
             document.getElementById('forgotIdStep2').classList.add('hidden');
             document.getElementById('forgotIdNextButton').classList.remove('hidden');
@@ -573,13 +619,12 @@
             document.getElementById('forgotFirstName').value = '';
             document.getElementById('forgotLastName').value = '';
             document.getElementById('challengeInput').value = '';
-            forgotIdChallengeData = {};
-        }
-
-        window.showForgotPasswordModal = () => {
-            closeForgotIdModal(); // Reset state
             document.getElementById('forgotIdModal').classList.remove('hidden');
-        }
+        };
+
+        window.closeForgotIdModal = () => {
+            document.getElementById('forgotIdModal').classList.add('hidden');
+        };
 
         window.handleForgotIdNext = async () => {
             const firstName = document.getElementById('forgotFirstName').value.trim();
@@ -588,483 +633,756 @@
                 return showCustomAlert("Please enter both first and last name.");
             }
 
-            // Find the user who forgot their ID
-            const userQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("firstName", "==", firstName), where("lastName", "==", lastName));
-            const userSnapshot = await getDocs(userQuery);
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), 
+                                where("firstName", "==", firstName),
+                                where("lastName", "==", lastName));
+                const querySnapshot = await getDocs(q);
 
-            if (userSnapshot.empty) {
-                return showCustomAlert("No user found with that name. Please contact jdwhelp@gmail.com for assistance.");
+                if (querySnapshot.empty) {
+                    return showCustomAlert("No user found with that name. Please check your spelling.");
+                }
+
+                // If multiple users have the same name, pick the first one for the challenge
+                forgotIdChallengeData = {
+                    userDoc: querySnapshot.docs[0],
+                    correctRole: querySnapshot.docs[0].data().role
+                };
+
+                document.getElementById('challengeText').textContent = `What was your registered role?`;
+                document.getElementById('forgotIdStep1').classList.add('hidden');
+                document.getElementById('forgotIdStep2').classList.remove('hidden');
+                document.getElementById('forgotIdNextButton').classList.add('hidden');
+                document.getElementById('forgotIdSubmitButton').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Forgot ID (Step 1) Error:", error);
+                showCustomAlert("An error occurred during ID recovery. Please try again.");
             }
-            const userToRecover = userSnapshot.docs[0].data();
-
-            // Find a random user for the challenge (EI, TC, or RC)
-            const challengeRoles = ['Early Youth Instructor', 'TC', 'RC'];
-            const randomRole = challengeRoles[Math.floor(Math.random() * challengeRoles.length)];
-            const challengeQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", randomRole));
-            const challengeSnapshot = await getDocs(challengeQuery);
-
-            if (challengeSnapshot.empty) {
-                 return showCustomAlert("Could not create a security challenge. Please contact jdwhelp@gmail.com for assistance.");
-            }
-
-            const challengeUser = challengeSnapshot.docs[Math.floor(Math.random() * challengeSnapshot.docs.length)].data();
-
-            forgotIdChallengeData = {
-                userToRecoverId: userToRecover.mywhelpId,
-                challengeUserRole: challengeUser.role
-            };
-
-            document.getElementById('challengeText').textContent = `What is the role of: ${challengeUser.name}?`;
-            document.getElementById('forgotIdStep1').classList.add('hidden');
-            document.getElementById('forgotIdStep2').classList.remove('hidden');
-            document.getElementById('forgotIdNextButton').classList.add('hidden');
-            document.getElementById('forgotIdSubmitButton').classList.remove('hidden');
         };
 
-        window.handleForgotIdSubmit = () => {
+        window.handleForgotIdSubmit = async () => {
             const selectedRole = document.getElementById('challengeInput').value;
             if (!selectedRole) {
-                return showCustomAlert("Please select a role.");
+                return showCustomAlert("Please select your role.");
             }
 
-            if (selectedRole === forgotIdChallengeData.challengeUserRole) {
-                showCustomAlert(`Success! Your ID is: ${forgotIdChallengeData.userToRecoverId}`, "ID Recovered");
+            if (selectedRole === forgotIdChallengeData.correctRole) {
+                const recoveredId = forgotIdChallengeData.userDoc.data().mywhelpId;
+                showCustomAlert(`Your User ID is: ${recoveredId}. Please write it down!`, "ID Recovered!");
+                closeForgotIdModal();
             } else {
-                showCustomAlert("Incorrect role. For security, please email Brethren John Doe at jdwhelp@gmail.com to retrieve your ID.", "Challenge Failed");
+                showCustomAlert("Incorrect role. Please try again or contact support if you continue to have issues.");
             }
-            closeForgotIdModal();
         };
 
-        // --- Feature Implementation: Notes & Todos ---
+        // --- Personal Notes Functions ---
         window.savePersonalNote = async () => {
-            const text = document.getElementById('personalNoteText').value.trim();
-            if (!text) return showCustomAlert("Note cannot be empty.");
+            if (!currentUserId) {
+                return showCustomAlert("Please log in to save notes.");
+            }
+            const noteText = document.getElementById('personalNoteText').value.trim();
+            if (!noteText) {
+                return showCustomAlert("Note cannot be empty.");
+            }
+
             try {
-                const notesCollection = collection(db, getPrivateNotesCollectionPath(currentUserId));
-                await addDoc(notesCollection, { content: text, createdAt: serverTimestamp() });
+                await addDoc(collection(db, getPrivateNotesCollectionPath(currentUserId)), {
+                    text: noteText,
+                    createdAt: serverTimestamp()
+                });
                 document.getElementById('personalNoteText').value = '';
-            } catch (error) { console.error("Error saving note:", error); showCustomAlert("Failed to save note."); }
+                showCustomAlert("Note saved successfully!");
+            } catch (error) {
+                console.error("Error saving personal note:", error);
+                showCustomAlert("Failed to save note. Please try again.");
+            }
         };
 
         function loadPersonalNotes() {
-            const q = query(collection(db, getPrivateNotesCollectionPath(currentUserId)));
-            const unsub = onSnapshot(q, (snapshot) => {
-                document.getElementById('notesSpinner').classList.add('hidden');
-                const list = document.getElementById('personalNotesList');
-                const noItems = document.getElementById('noPersonalNotes');
-                list.innerHTML = '';
+            const notesList = document.getElementById('personalNotesList');
+            const noNotesMessage = document.getElementById('noPersonalNotes');
+            const spinner = document.getElementById('notesSpinner');
+            if (!currentUserId) {
+                notesList.innerHTML = '';
+                noNotesMessage.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noNotesMessage.classList.add('hidden');
+
+            const q = query(collection(db, getPrivateNotesCollectionPath(currentUserId))); // No orderBy for now
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                notesList.innerHTML = '';
                 if (snapshot.empty) {
-                    noItems.classList.remove('hidden');
+                    noNotesMessage.classList.remove('hidden');
                 } else {
-                    noItems.classList.add('hidden');
-                    snapshot.docs.forEach(doc => {
-                        list.innerHTML += `<li class="flex justify-between items-center bg-white/5 p-3 rounded-lg"><span>${doc.data().content}</span><button onclick="deleteNote('${doc.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></li>`;
+                    noNotesMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const note = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <span class="flex-grow">${note.text}</span>
+                            <button class="text-red-400 hover:text-red-600 ml-4" onclick="deletePersonalNote('${doc.id}')"><i class="fas fa-trash"></i></button>
+                        `;
+                        notesList.appendChild(li);
                     });
                 }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading personal notes:", error);
+                showCustomAlert("Failed to load notes. Please try again.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        window.deleteNote = async (noteId) => {
-            if (!confirm("Are you sure you want to delete this note?")) return;
-            await deleteDoc(doc(db, getPrivateNotesCollectionPath(currentUserId), noteId));
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        window.addTodoItem = async () => {
-            const input = document.getElementById('todoInput');
-            if (!input.value.trim()) return;
-            const todosCollection = collection(db, getPrivateTodosCollectionPath(currentUserId));
-            await addDoc(todosCollection, { text: input.value.trim(), completed: false, createdAt: serverTimestamp() });
-            input.value = '';
+        window.deletePersonalNote = async (noteId) => {
+            if (!currentUserId) return;
+            try {
+                await deleteDoc(doc(db, getPrivateNotesCollectionPath(currentUserId), noteId));
+                showCustomAlert("Note deleted.");
+            } catch (error) {
+                console.error("Error deleting note:", error);
+                showCustomAlert("Failed to delete note.");
+            }
         };
-        
+
+        // --- To-do List Functions ---
+        window.addTodoItem = async () => {
+            if (!currentUserId) {
+                return showCustomAlert("Please log in to add to-do items.");
+            }
+            const todoInput = document.getElementById('todoInput');
+            const text = todoInput.value.trim();
+            if (!text) {
+                return showCustomAlert("To-do item cannot be empty.");
+            }
+
+            try {
+                await addDoc(collection(db, getPrivateTodosCollectionPath(currentUserId)), {
+                    text: text,
+                    completed: false,
+                    createdAt: serverTimestamp()
+                });
+                todoInput.value = '';
+            } catch (error) {
+                console.error("Error adding todo:", error);
+                showCustomAlert("Failed to add to-do item.");
+            }
+        };
+
         function loadTodoItems() {
-            const q = query(collection(db, getPrivateTodosCollectionPath(currentUserId)));
-            const unsub = onSnapshot(q, (snapshot) => {
-                document.getElementById('todosSpinner').classList.add('hidden');
-                const list = document.getElementById('todoList');
-                const noItems = document.getElementById('noTodos');
-                list.innerHTML = '';
+            const todoList = document.getElementById('todoList');
+            const noTodosMessage = document.getElementById('noTodos');
+            const spinner = document.getElementById('todosSpinner');
+            if (!currentUserId) {
+                todoList.innerHTML = '';
+                noTodosMessage.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noTodosMessage.classList.add('hidden');
+
+            const q = query(collection(db, getPrivateTodosCollectionPath(currentUserId))); // No orderBy for now
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                todoList.innerHTML = '';
                 if (snapshot.empty) {
-                    noItems.classList.remove('hidden');
+                    noTodosMessage.classList.remove('hidden');
                 } else {
-                    noItems.classList.add('hidden');
-                    snapshot.docs.forEach(docSnap => {
-                        const todo = docSnap.data();
-                        list.innerHTML += `
-                            <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                                <span class="${todo.completed ? 'line-through text-gray-400' : ''}">${todo.text}</span>
-                                <div class="flex gap-3">
-                                    <button onclick="toggleTodo('${docSnap.id}', ${todo.completed})" class="${todo.completed ? 'text-yellow-400' : 'text-green-400'}"><i class="fas fa-check-circle"></i></button>
-                                    <button onclick="showEditTodoModal('${docSnap.id}', '${todo.text}')" class="text-blue-400"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteTodo('${docSnap.id}')" class="text-red-400"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </li>`;
+                    noTodosMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const todo = doc.data();
+                        const li = document.createElement('li');
+                        li.className = `bg-white/10 p-3 rounded-lg flex justify-between items-center ${todo.completed ? 'opacity-60 line-through' : ''}`;
+                        li.innerHTML = `
+                            <div class="flex items-center flex-grow">
+                                <input type="checkbox" class="mr-3 h-4 w-4 text-green-600 rounded focus:ring-green-500" ${todo.completed ? 'checked' : ''} onchange="toggleTodoCompleted('${doc.id}', ${!todo.completed})">
+                                <span class="flex-grow">${todo.text}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <button class="text-blue-400 hover:text-blue-600 mr-2" onclick="editTodoItem('${doc.id}', '${todo.text}')"><i class="fas fa-edit"></i></button>
+                                <button class="text-red-400 hover:text-red-600" onclick="deleteTodoItem('${doc.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                        todoList.appendChild(li);
                     });
                 }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading todos:", error);
+                showCustomAlert("Failed to load to-do items. Please try again.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        window.toggleTodo = async (id, currentStatus) => {
-            await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id), { completed: !currentStatus });
-        }
-        window.deleteTodo = async (id) => {
-             if (!confirm("Are you sure you want to delete this to-do item?")) return;
-            await deleteDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id));
-        }
-        window.showEditTodoModal = (id, currentText) => {
-            const modal = document.getElementById('editTodoModal');
+        window.toggleTodoCompleted = async (todoId, completed) => {
+            if (!currentUserId) return;
+            try {
+                await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), todoId), {
+                    completed: completed
+                });
+            } catch (error) {
+                console.error("Error toggling todo status:", error);
+                showCustomAlert("Failed to update to-do status.");
+            }
+        };
+
+        window.editTodoItem = (todoId, currentText) => {
             document.getElementById('editTodoInput').value = currentText;
-            modal.classList.remove('hidden');
-            document.getElementById('saveTodoEditButton').onclick = () => saveTodoEdit(id);
-        }
-        async function saveTodoEdit(id) {
-            const newText = document.getElementById('editTodoInput').value.trim();
-            if (!newText) return;
-            await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), id), { text: newText });
-            document.getElementById('editTodoModal').classList.add('hidden');
-        }
+            document.getElementById('saveTodoEditButton').onclick = () => saveTodoEdit(todoId);
+            document.getElementById('editTodoModal').classList.remove('hidden');
+        };
 
-        // --- Feature Implementation: Attendance ---
+        async function saveTodoEdit(todoId) {
+            if (!currentUserId) return;
+            const newText = document.getElementById('editTodoInput').value.trim();
+            if (!newText) {
+                return showCustomAlert("To-do item cannot be empty.");
+            }
+            try {
+                await updateDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), todoId), {
+                    text: newText
+                });
+                document.getElementById('editTodoModal').classList.add('hidden');
+            } catch (error) {
+                console.error("Error saving todo edit:", error);
+                showCustomAlert("Failed to save to-do item changes.");
+            }
+        };
+
+        window.deleteTodoItem = async (todoId) => {
+            if (!currentUserId) return;
+            try {
+                await deleteDoc(doc(db, getPrivateTodosCollectionPath(currentUserId), todoId));
+                showCustomAlert("To-do item deleted.");
+            } catch (error) {
+                console.error("Error deleting todo:", error);
+                showCustomAlert("Failed to delete to-do item.");
+            }
+        };
+
+        // --- Attendance Functions (Instructor Role) ---
+        let allEarlyYouthUsers = []; // Cache for students
+
         async function loadStudentsForAttendance() {
             const spinner = document.getElementById('attendanceStudentsSpinner');
-            const noStudents = document.getElementById('noStudentsForAttendance');
-            const container = document.getElementById('attendance-table-container');
+            const noStudentsMessage = document.getElementById('noStudentsForAttendance');
+            const tableContainer = document.getElementById('attendance-table-container');
 
-            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                if (snapshot.empty) {
-                    noStudents.classList.remove('hidden');
-                    container.innerHTML = '';
-                    return;
+            spinner.classList.remove('hidden');
+            noStudentsMessage.classList.add('hidden');
+            tableContainer.innerHTML = ''; // Clear previous table
+
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
+                const querySnapshot = await getDocs(q);
+                allEarlyYouthUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (allEarlyYouthUsers.length === 0) {
+                    noStudentsMessage.classList.remove('hidden');
+                } else {
+                    renderAttendanceTable();
                 }
-                noStudents.classList.add('hidden');
-                let tableHTML = `<table class="w-full text-left"><thead><tr class="border-b border-white/20"><th class="p-3">Name</th><th class="p-3 text-center">Status</th></tr></thead><tbody>`;
-                snapshot.docs.forEach(doc => {
-                    const student = { id: doc.id, ...doc.data() };
-                    tableHTML += `
-                        <tr class="border-b border-white/10" data-student-id="${student.id}">
-                            <td class="p-3">${student.name}</td>
-                            <td class="p-3 flex justify-center gap-2">
-                                <button onclick="toggleAttendanceStatus(this, 'present')" class="btn-status p-2 rounded-full bg-green-700 hover:bg-green-600 w-10 h-10 flex items-center justify-center"><i class="fas fa-check"></i></button>
-                                <button onclick="toggleAttendanceStatus(this, 'late')" class="btn-status p-2 rounded-full bg-yellow-600 hover:bg-yellow-500 w-10 h-10 flex items-center justify-center"><i class="fas fa-clock"></i></button>
-                                <button onclick="toggleAttendanceStatus(this, 'absent')" class="btn-status p-2 rounded-full bg-red-700 hover:bg-red-600 w-10 h-10 flex items-center justify-center"><i class="fas fa-times"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tableHTML += `</tbody></table>`;
-                container.innerHTML = tableHTML;
-            });
-            unsubscribeListeners.push(unsub);
+            } catch (error) {
+                console.error("Error loading Early Youth users:", error);
+                showCustomAlert("Failed to load students for attendance.");
+            } finally {
+                spinner.classList.add('hidden');
+            }
         }
 
-        window.toggleAttendanceStatus = (btn, status) => {
-            const row = btn.closest('tr');
-            row.dataset.status = status;
-            // Remove 'selected' from siblings
-            row.querySelectorAll('.btn-status').forEach(b => b.classList.remove('selected'));
-            // Add 'selected' to clicked button
-            btn.classList.add('selected');
+        function renderAttendanceTable() {
+            const tableContainer = document.getElementById('attendance-table-container');
+            if (allEarlyYouthUsers.length === 0) {
+                tableContainer.innerHTML = '';
+                return;
+            }
+
+            let tableHtml = `<table class="min-w-full bg-white/10 rounded-lg overflow-hidden">
+                <thead class="bg-white/20">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold">Student Name</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            allEarlyYouthUsers.forEach(student => {
+                tableHtml += `
+                    <tr class="border-b border-white/10 last:border-b-0">
+                        <td class="py-3 px-4 text-sm">${student.name}</td>
+                        <td class="py-3 px-4 text-sm">
+                            <div class="flex gap-2">
+                                <button class="btn-status py-1 px-3 rounded-full text-xs font-semibold bg-green-600 hover:bg-green-500" data-student-id="${student.id}" data-status="Present" onclick="selectAttendanceStatus(this, '${student.id}', 'Present')">Present</button>
+                                <button class="btn-status py-1 px-3 rounded-full text-xs font-semibold bg-red-600 hover:bg-red-500" data-student-id="${student.id}" data-status="Absent" onclick="selectAttendanceStatus(this, '${student.id}', 'Absent')">Absent</button>
+                                <button class="btn-status py-1 px-3 rounded-full text-xs font-semibold bg-yellow-600 hover:bg-yellow-500" data-student-id="${student.id}" data-status="Late" onclick="selectAttendanceStatus(this, '${student.id}', 'Late')">Late</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            tableContainer.innerHTML = tableHtml;
         }
+
+        window.selectedAttendance = {}; // Store selected status for each student
+
+        window.selectAttendanceStatus = (button, studentId, status) => {
+            // Remove 'selected' class from all buttons for this student
+            document.querySelectorAll(`button[data-student-id="${studentId}"]`).forEach(btn => {
+                btn.classList.remove('selected');
+                btn.classList.remove('border-white'); // Remove border on deselected
+            });
+            // Add 'selected' class to the clicked button
+            button.classList.add('selected');
+            button.classList.add('border-white'); // Add border to selected
+
+            selectedAttendance[studentId] = status;
+            console.log(`Student ${studentId} set to ${status}`);
+        };
 
         window.saveAttendance = async () => {
-            const date = document.getElementById('attendanceDate').value;
-            if (!date) return showCustomAlert("Please select a date.");
+            if (!currentUserId) {
+                return showCustomAlert("Please log in to save attendance.");
+            }
+            const attendanceDate = document.getElementById('attendanceDate').value;
+            if (!attendanceDate) {
+                return showCustomAlert("Please select an attendance date.");
+            }
+            if (Object.keys(selectedAttendance).length === 0) {
+                return showCustomAlert("Please mark attendance for at least one student.");
+            }
 
-            const attendanceData = {};
-            const rows = document.querySelectorAll('#attendance-table-container tr[data-student-id]');
-            let recordsToSave = 0;
-            rows.forEach(row => {
-                if (row.dataset.status) {
-                    attendanceData[row.dataset.studentId] = row.dataset.status;
-                    recordsToSave++;
-                }
-            });
+            const batch = writeBatch(db);
+            const attendanceDocRef = doc(db, PUBLIC_ATTENDANCE_COLLECTION, attendanceDate);
 
-            if (recordsToSave === 0) return showCustomAlert("No attendance statuses have been set.");
-            
+            // Fetch existing attendance for the day to merge
+            const existingAttendanceSnap = await getDoc(attendanceDocRef);
+            const existingData = existingAttendanceSnap.exists() ? existingAttendanceSnap.data() : {};
+
+            const newAttendanceData = {
+                ...existingData, // Preserve existing data
+                date: attendanceDate,
+                instructorId: currentUserId,
+                instructorName: currentUserProfile.name,
+                updatedAt: serverTimestamp()
+            };
+
+            // Update attendance for each student
+            for (const studentId in selectedAttendance) {
+                newAttendanceData[studentId] = selectedAttendance[studentId];
+            }
+
+            batch.set(attendanceDocRef, newAttendanceData, { merge: true });
+
             try {
-                const attendanceDocRef = doc(db, PUBLIC_ATTENDANCE_COLLECTION, date);
-                await setDoc(attendanceDocRef, { records: attendanceData, lastUpdated: serverTimestamp() }, { merge: true });
+                await batch.commit();
                 showCustomAlert("Attendance saved successfully!");
+                selectedAttendance = {}; // Clear selections after saving
+                renderAttendanceTable(); // Re-render to clear visual selections
             } catch (error) {
                 console.error("Error saving attendance:", error);
                 showCustomAlert("Failed to save attendance.");
             }
-        }
-        
+        };
+
+        // --- View Attendance Functions ---
         function loadAllAttendanceRecords() {
+            const attendanceAccordion = document.getElementById('attendanceAccordion');
+            const noRecordsMessage = document.getElementById('noAttendanceRecords');
             const spinner = document.getElementById('attendanceViewSpinner');
-            const noRecords = document.getElementById('noAttendanceRecords');
-            const accordion = document.getElementById('attendanceAccordion');
-
-            const q = query(collection(db, PUBLIC_ATTENDANCE_COLLECTION));
-            const unsub = onSnapshot(q, async (snapshot) => {
+            if (!currentUserId) {
+                attendanceAccordion.innerHTML = '';
+                noRecordsMessage.classList.remove('hidden');
                 spinner.classList.add('hidden');
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noRecordsMessage.classList.add('hidden');
+
+            const q = query(collection(db, PUBLIC_ATTENDANCE_COLLECTION)); // No orderBy for now
+            const unsubscribe = onSnapshot(q, async (snapshot) => {
+                attendanceAccordion.innerHTML = '';
                 if (snapshot.empty) {
-                    noRecords.classList.remove('hidden');
-                    accordion.innerHTML = '';
-                    return;
+                    noRecordsMessage.classList.remove('hidden');
+                } else {
+                    noRecordsMessage.classList.add('hidden');
+                    const usersMap = new Map();
+                    // Fetch all users once to map UIDs to names
+                    const usersSnapshot = await getDocs(collection(db, PUBLIC_USERS_COLLECTION));
+                    usersSnapshot.forEach(userDoc => {
+                        usersMap.set(userDoc.id, userDoc.data().name);
+                    });
+
+                    snapshot.forEach(doc => {
+                        const record = doc.data();
+                        const date = record.date;
+                        const instructorName = record.instructorName || 'N/A';
+
+                        let detailsHtml = `<p class="text-gray-300 mb-2">Instructor: ${instructorName}</p>`;
+                        detailsHtml += `<ul class="list-disc pl-5 space-y-1">`;
+                        
+                        // Iterate through all keys in the record to find student attendance
+                        for (const key in record) {
+                            if (key !== 'date' && key !== 'instructorId' && key !== 'instructorName' && key !== 'updatedAt') {
+                                const studentName = usersMap.get(key) || `Unknown User (${key})`;
+                                const status = record[key];
+                                detailsHtml += `<li><span class="font-semibold">${studentName}:</span> ${status}</li>`;
+                            }
+                        }
+                        detailsHtml += `</ul>`;
+
+                        const accordionItem = document.createElement('div');
+                        accordionItem.className = 'glass-effect rounded-lg overflow-hidden';
+                        accordionItem.innerHTML = `
+                            <div class="accordion-header p-4 flex justify-between items-center bg-white/10 hover:bg-white/20 transition duration-200">
+                                <h5 class="font-bold">${date} Attendance</h5>
+                                <i class="fas fa-chevron-down transform transition-transform duration-200"></i>
+                            </div>
+                            <div class="accordion-content p-4 hidden">
+                                ${detailsHtml}
+                            </div>
+                        `;
+                        attendanceAccordion.appendChild(accordionItem);
+
+                        accordionItem.querySelector('.accordion-header').addEventListener('click', function() {
+                            const content = this.nextElementSibling;
+                            const icon = this.querySelector('.fa-chevron-down');
+                            content.classList.toggle('hidden');
+                            icon.classList.toggle('rotate-180');
+                        });
+                    });
                 }
-                noRecords.classList.add('hidden');
-                accordion.innerHTML = '';
-
-                // Fetch all user names once to avoid multiple reads
-                const usersSnapshot = await getDocs(collection(db, PUBLIC_USERS_COLLECTION));
-                const userNames = {};
-                usersSnapshot.forEach(doc => userNames[doc.id] = doc.data().name);
-
-                snapshot.docs.sort((a, b) => b.id.localeCompare(a.id)).forEach(doc => {
-                    const date = doc.id;
-                    const records = doc.data().records;
-                    let recordsHtml = '<ul class="space-y-1">';
-                    for (const [studentId, status] of Object.entries(records)) {
-                        const studentName = userNames[studentId] || 'Unknown User';
-                        const statusColors = { present: 'text-green-400', absent: 'text-red-400', late: 'text-yellow-400' };
-                        recordsHtml += `<li class="flex justify-between"><span>${studentName}</span><span class="font-semibold ${statusColors[status] || ''}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></li>`;
-                    }
-                    recordsHtml += '</ul>';
-                    
-                    accordion.innerHTML += `
-                        <div class="glass-effect rounded-lg">
-                            <div class="accordion-header flex justify-between items-center p-4" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                                <span class="font-bold">${date}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="p-4 border-t border-white/10 hidden">
-                                ${recordsHtml}
-                            </div>
-                        </div>
-                    `;
-                });
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading attendance records:", error);
+                showCustomAlert("Failed to load attendance records. Please try again.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        // --- Feature Implementation: Evaluations ---
+        // --- Evaluations Functions (Instructor & Early Youth Roles) ---
+        let earlyYouthUsersForEval = []; // Cache for students to evaluate
+
         async function loadEYForEvaluation() {
+            const evaluationList = document.getElementById('evaluationList');
+            const noEYUsersMessage = document.getElementById('noEYUsers');
             const spinner = document.getElementById('evaluationsStudentsSpinner');
-            const noUsers = document.getElementById('noEYUsers');
-            const list = document.getElementById('evaluationList');
 
-            const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
-            const unsub = onSnapshot(q, (snapshot) => {
-                spinner.classList.add('hidden');
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    noUsers.classList.remove('hidden');
-                    return;
-                }
-                noUsers.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const student = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+            spinner.classList.remove('hidden');
+            noEYUsersMessage.classList.add('hidden');
+            evaluationList.innerHTML = '';
+
+            try {
+                const q = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", "Early Youth"));
+                const querySnapshot = await getDocs(q);
+                earlyYouthUsersForEval = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (earlyYouthUsersForEval.length === 0) {
+                    noEYUsersMessage.classList.remove('hidden');
+                } else {
+                    earlyYouthUsersForEval.forEach(student => {
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
                             <span>${student.name}</span>
-                            <button onclick="showEvaluationModal('${student.id}', '${student.name}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">Evaluate</button>
-                        </li>
-                    `;
-                });
-            });
-            unsubscribeListeners.push(unsub);
+                            <button class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-1 px-3 rounded-lg text-sm" onclick="openEvaluationModal('${student.id}', '${student.name}')">Evaluate</button>
+                        `;
+                        evaluationList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading Early Youth users for evaluation:", error);
+                showCustomAlert("Failed to load students for evaluation.");
+            } finally {
+                spinner.classList.add('hidden');
+            }
         }
-        
-        window.showEvaluationModal = (studentId, studentName) => {
-            const modal = document.getElementById('evaluationModal');
+
+        window.openEvaluationModal = (studentId, studentName) => {
             document.getElementById('evalStudentName').textContent = studentName;
-            document.getElementById('evaluationValue').value = '';
-            modal.classList.remove('hidden');
             document.getElementById('saveEvaluationButton').onclick = () => saveEvaluation(studentId, studentName);
-        }
+            document.getElementById('evaluationValue').value = ''; // Reset dropdown
+            document.getElementById('evaluationModal').classList.remove('hidden');
+        };
 
         async function saveEvaluation(studentId, studentName) {
-            const evaluation = document.getElementById('evaluationValue').value;
-            if (!evaluation) return showCustomAlert("Please select an evaluation.");
+            if (!currentUserId) return;
+            const evaluationValue = document.getElementById('evaluationValue').value;
+            if (!evaluationValue) {
+                return showCustomAlert("Please select an evaluation value.");
+            }
 
             try {
                 await addDoc(collection(db, PUBLIC_EVALUATIONS_COLLECTION), {
-                    evaluatorId: currentUserId,
-                    evaluatorName: currentUserProfile.name,
                     studentId: studentId,
                     studentName: studentName,
-                    evaluation: evaluation,
-                    isExpired: false,
+                    evaluatorId: currentUserId,
+                    evaluatorName: currentUserProfile.name,
+                    evaluation: evaluationValue,
                     createdAt: serverTimestamp()
                 });
-                showCustomAlert("Evaluation submitted successfully.");
+                showCustomAlert("Evaluation submitted successfully!");
                 document.getElementById('evaluationModal').classList.add('hidden');
             } catch (error) {
                 console.error("Error saving evaluation:", error);
-                showCustomAlert("Failed to save evaluation.");
+                showCustomAlert("Failed to submit evaluation.");
             }
         }
 
         function loadMyEvaluations() {
+            const myEvaluationsList = document.getElementById('myEvaluationsList');
+            const noMyEvaluationsMessage = document.getElementById('noMyEvaluations');
             const spinner = document.getElementById('myEvaluationsSpinner');
-            const noEvals = document.getElementById('noMyEvaluations');
-            const list = document.getElementById('myEvaluationsList');
-            
-            const q = query(collection(db, PUBLIC_EVALUATIONS_COLLECTION), where("studentId", "==", currentUserId));
-            const unsub = onSnapshot(q, (snapshot) => {
+            if (!currentUserId) {
+                myEvaluationsList.innerHTML = '';
+                noMyEvaluationsMessage.classList.remove('hidden');
                 spinner.classList.add('hidden');
-                list.innerHTML = '';
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noMyEvaluationsMessage.classList.add('hidden');
+
+            const q = query(collection(db, PUBLIC_EVALUATIONS_COLLECTION), where("studentId", "==", currentUserId)); // No orderBy for now
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                myEvaluationsList.innerHTML = '';
                 if (snapshot.empty) {
-                    noEvals.classList.remove('hidden');
-                    return;
+                    noMyEvaluationsMessage.classList.remove('hidden');
+                } else {
+                    noMyEvaluationsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const evalData = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg';
+                        const date = evalData.createdAt ? new Date(evalData.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        li.innerHTML = `
+                            <p><span class="font-semibold">Evaluator:</span> ${evalData.evaluatorName}</p>
+                            <p><span class="font-semibold">Evaluation:</span> ${evalData.evaluation}</p>
+                            <p class="text-xs text-gray-400">Date: ${date}</p>
+                        `;
+                        myEvaluationsList.appendChild(li);
+                    });
                 }
-                noEvals.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const e = doc.data();
-                    const isExpired = e.isExpired;
-                    list.innerHTML += `
-                        <li class="bg-white/5 p-3 rounded-lg ${isExpired ? 'opacity-50' : ''}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="font-bold">${e.evaluation} ${isExpired ? '(Expired)' : ''}</p>
-                                    <p class="text-sm text-gray-400">From: ${e.evaluatorName}</p>
-                                </div>
-                                <p class="text-sm text-gray-400">${new Date(e.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                        </li>
-                    `;
-                });
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading my evaluations:", error);
+                showCustomAlert("Failed to load your evaluations.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
+            unsubscribeListeners.push(unsubscribe);
         }
-        
-        // --- Feature Implementation: Reporting ---
-        window.saveReport = async (reportId = null, currentEdits = 0) => {
-            const content = reportId ? document.getElementById('reportModalTextarea').value.trim() : document.getElementById('reportText').value.trim();
-            if (!content) return showCustomAlert("Report content cannot be empty.");
+
+        // --- Reporting Functions ---
+        window.saveReport = async () => {
+            if (!currentUserId) {
+                return showCustomAlert("Please log in to submit reports.");
+            }
+            const reportText = document.getElementById('reportText').value.trim();
+            if (!reportText) {
+                return showCustomAlert("Report cannot be empty.");
+            }
 
             try {
-                if (reportId) { // Editing existing report
-                    if (currentEdits >= 3) {
-                        return showCustomAlert("This report cannot be edited anymore (3 edits max).");
-                    }
-                    await updateDoc(doc(db, PUBLIC_REPORTS_COLLECTION, reportId), {
-                        content: content,
-                        lastUpdatedAt: serverTimestamp(),
-                        editCount: currentEdits + 1
-                    });
-                    document.getElementById('reportModal').classList.add('hidden');
-                    showCustomAlert("Report updated successfully.");
-                } else { // Creating new report
-                    await addDoc(collection(db, PUBLIC_REPORTS_COLLECTION), {
-                        authorId: currentUserId,
-                        authorName: currentUserProfile.name,
-                        authorRole: currentUserProfile.role,
-                        content: content,
-                        editCount: 0,
-                        createdAt: serverTimestamp(),
-                        lastUpdatedAt: serverTimestamp()
-                    });
-                    document.getElementById('reportText').value = '';
-                    showCustomAlert("Report submitted successfully.");
-                }
+                await addDoc(collection(db, PUBLIC_REPORTS_COLLECTION), {
+                    authorId: currentUserId,
+                    authorName: currentUserProfile.name,
+                    role: currentUserProfile.role,
+                    content: reportText,
+                    createdAt: serverTimestamp(),
+                    lastEditedAt: serverTimestamp(),
+                    editCount: 0
+                });
+                document.getElementById('reportText').value = '';
+                showCustomAlert("Report submitted successfully!");
             } catch (error) {
                 console.error("Error saving report:", error);
-                showCustomAlert("Failed to save report.");
+                showCustomAlert("Failed to submit report. Please try again.");
             }
-        }
+        };
 
         function loadMyReports() {
+            const reportList = document.getElementById('reportList');
+            const noMyReportsMessage = document.getElementById('noMyReports');
             const spinner = document.getElementById('myReportsSpinner');
-            const noReports = document.getElementById('noMyReports');
-            const list = document.getElementById('reportList');
-            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION), where("authorId", "==", currentUserId));
-            const unsub = onSnapshot(q, (snapshot) => {
+            if (!currentUserId) {
+                reportList.innerHTML = '';
+                noMyReportsMessage.classList.remove('hidden');
                 spinner.classList.add('hidden');
-                list.innerHTML = '';
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noMyReportsMessage.classList.add('hidden');
+
+            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION), where("authorId", "==", currentUserId)); // No orderBy for now
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                reportList.innerHTML = '';
                 if (snapshot.empty) {
-                    noReports.classList.remove('hidden');
-                    return;
+                    noMyReportsMessage.classList.remove('hidden');
+                } else {
+                    noMyReportsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const report = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        const date = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        li.innerHTML = `
+                            <span class="flex-grow">Report by ${report.authorName} on ${date} (Edits: ${report.editCount || 0})</span>
+                            <button class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-1 px-3 rounded-lg text-sm ml-4" onclick="viewReport('${doc.id}', true)">View/Edit</button>
+                        `;
+                        reportList.appendChild(li);
+                    });
                 }
-                noReports.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const report = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                            <span>Report from ${new Date(report.createdAt.seconds * 1000).toLocaleDateString()}</span>
-                            <button onclick='showReportModal(${JSON.stringify(report)})' class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">View/Edit</button>
-                        </li>`;
-                });
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading my reports:", error);
+                showCustomAlert("Failed to load your reports.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
+            unsubscribeListeners.push(unsubscribe);
         }
 
         function loadVisibleReports() {
+            const visibleReportsList = document.getElementById('visibleReports');
+            const noVisibleReportsMessage = document.getElementById('noVisibleReports');
             const spinner = document.getElementById('allReportsSpinner');
-            const noReports = document.getElementById('noVisibleReports');
-            const list = document.getElementById('visibleReports');
-            
-            // All users except EY can view reports. Logic can be refined here if needed.
-            const q = query(collection(db, PUBLIC_REPORTS_COLLECTION));
-            const unsub = onSnapshot(q, (snapshot) => {
+            if (!currentUserId) {
+                visibleReportsList.innerHTML = '';
+                noVisibleReportsMessage.classList.remove('hidden');
                 spinner.classList.add('hidden');
-                list.innerHTML = '';
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            noVisibleReportsMessage.classList.add('hidden');
+
+            let q;
+            // Define visibility rules based on the current user's role
+            const userRole = currentUserProfile.role;
+            if (userRole === 'Early Youth Instructor') {
+                // Instructor sees reports from Early Youth Advisors, TCs
+                q = query(collection(db, PUBLIC_REPORTS_COLLECTION), 
+                          where("role", "in", ["Early Youth Advisor", "TC"]));
+            } else if (userRole === 'Early Youth Advisor') {
+                // Advisor sees reports from Early Youth Instructors, TCs
+                q = query(collection(db, PUBLIC_REPORTS_COLLECTION), 
+                          where("role", "in", ["Early Youth Instructor", "TC"]));
+            } else if (userRole === 'TC') {
+                // TC sees reports from Early Youth Instructors, Early Youth Advisors
+                q = query(collection(db, PUBLIC_REPORTS_COLLECTION), 
+                          where("role", "in", ["Early Youth Instructor", "Early Youth Advisor"]));
+            } else {
+                // RC sees all reports (except their own if they write them, but the prompt says RC doesn't write)
+                // For simplicity, if role is RC, they see all.
+                q = query(collection(db, PUBLIC_REPORTS_COLLECTION));
+            }
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                visibleReportsList.innerHTML = '';
                 if (snapshot.empty) {
-                    noReports.classList.remove('hidden');
-                    return;
+                    noVisibleReportsMessage.classList.remove('hidden');
+                } else {
+                    noVisibleReportsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const report = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        const date = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        li.innerHTML = `
+                            <span class="flex-grow">Report by ${report.authorName} (${report.role}) on ${date}</span>
+                            <button class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-1 px-3 rounded-lg text-sm ml-4" onclick="viewReport('${doc.id}', false)">View</button>
+                        `;
+                        visibleReportsList.appendChild(li);
+                    });
                 }
-                noReports.classList.add('hidden');
-                snapshot.docs.forEach(doc => {
-                    const report = { id: doc.id, ...doc.data() };
-                    list.innerHTML += `
-                        <li class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
-                            <div>
-                                <p>Report by ${report.authorName} (${report.authorRole})</p>
-                                <p class="text-xs text-gray-400">On: ${new Date(report.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                            <button onclick='showReportModal(${JSON.stringify(report)})' class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg">View</button>
-                        </li>`;
-                });
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading visible reports:", error);
+                showCustomAlert("Failed to load viewable reports.");
+                spinner.classList.add('hidden');
             });
-            unsubscribeListeners.push(unsub);
-        }
-        
-        window.showReportModal = (report) => {
-            const modal = document.getElementById('reportModal');
-            document.getElementById('reportAuthor').textContent = report.authorName;
-            document.getElementById('reportDate').textContent = new Date(report.createdAt.seconds * 1000).toLocaleString();
-            document.getElementById('reportModalTextarea').value = report.content;
-            document.getElementById('reportModalTextarea').readOnly = true;
-
-            const editCount = report.editCount || 0;
-            const editInfo = document.getElementById('editCountInfo');
-            editInfo.textContent = `Edits: ${editCount}/3. Last updated: ${new Date(report.lastUpdatedAt.seconds * 1000).toLocaleString()}`;
-            
-            const editButton = document.getElementById('editReportButton');
-            const saveButton = document.getElementById('saveEditedReportButton');
-            
-            // Show edit button only if user is the author, not EY/RC, and has edits left
-            const canEdit = report.authorId === currentUserId && !['Early Youth', 'RC'].includes(currentUserProfile.role) && editCount < 3;
-            editButton.classList.toggle('hidden', !canEdit);
-            saveButton.classList.add('hidden');
-
-            editButton.onclick = () => {
-                document.getElementById('reportModalTextarea').readOnly = false;
-                editButton.classList.add('hidden');
-                saveButton.classList.remove('hidden');
-            };
-            saveButton.onclick = () => saveReport(report.id, editCount);
-
-            modal.classList.remove('hidden');
+            unsubscribeListeners.push(unsubscribe);
         }
 
-        // --- Utility Functions ---
-        window.showCustomAlert = (message, title = "Message") => {
-            document.getElementById('alertModalLabel').textContent = title;
-            document.getElementById('alertModalBody').innerHTML = message; // Use innerHTML to allow for links
-            document.getElementById('alertModal').classList.remove('hidden');
+        window.viewReport = async (reportId, canEdit) => {
+            try {
+                const reportDocRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+                const reportDocSnap = await getDoc(reportDocRef);
+
+                if (!reportDocSnap.exists()) {
+                    return showCustomAlert("Report not found.");
+                }
+
+                const report = reportDocSnap.data();
+                document.getElementById('reportAuthor').textContent = report.authorName;
+                document.getElementById('reportDate').textContent = report.createdAt ? new Date(report.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                document.getElementById('reportModalTextarea').value = report.content;
+                document.getElementById('reportModalTextarea').readOnly = !canEdit;
+
+                const editCountInfo = document.getElementById('editCountInfo');
+                editCountInfo.textContent = `Edited: ${report.editCount || 0} times`;
+                editCountInfo.classList.toggle('hidden', (report.editCount || 0) === 0);
+
+                const editButton = document.getElementById('editReportButton');
+                const saveButton = document.getElementById('saveEditedReportButton');
+
+                if (canEdit) {
+                    editButton.classList.remove('hidden');
+                    editButton.onclick = () => {
+                        document.getElementById('reportModalTextarea').readOnly = false;
+                        editButton.classList.add('hidden');
+                        saveButton.classList.remove('hidden');
+                        showCustomAlert("You can now edit the report.");
+                    };
+                    saveButton.onclick = () => saveEditedReport(reportId, report.editCount || 0);
+                    saveButton.classList.add('hidden'); // Initially hidden until edit is clicked
+                } else {
+                    editButton.classList.add('hidden');
+                    saveButton.classList.add('hidden');
+                }
+
+                document.getElementById('reportModal').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error viewing report:", error);
+                showCustomAlert("Failed to load report details.");
+            }
         };
 
-        // --- App Entry Point ---
-        document.addEventListener('DOMContentLoaded', initializeAppAndAuth);
+        async function saveEditedReport(reportId, currentEditCount) {
+            if (!currentUserId) return;
+            const newContent = document.getElementById('reportModalTextarea').value.trim();
+            if (!newContent) {
+                return showCustomAlert("Report content cannot be empty.");
+            }
 
+            try {
+                const reportDocRef = doc(db, PUBLIC_REPORTS_COLLECTION, reportId);
+                await updateDoc(reportDocRef, {
+                    content: newContent,
+                    lastEditedAt: serverTimestamp(),
+                    editCount: (currentEditCount || 0) + 1
+                });
+                showCustomAlert("Report updated successfully!");
+                document.getElementById('reportModal').classList.add('hidden');
+            } catch (error) {
+                console.error("Error saving edited report:", error);
+                showCustomAlert("Failed to save report changes.");
+            }
+        }
+
+        // --- Initialize the app when the window loads ---
+        window.onload = initializeAppAndAuth;
     </script>
 </body>
 </html>
