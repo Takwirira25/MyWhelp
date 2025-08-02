@@ -45,6 +45,51 @@
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
         .accordion-header { cursor: pointer; }
+        /* Custom styles for multi-select dropdown */
+        .select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        .select-dropdown-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            color: white;
+        }
+        .select-dropdown-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #3730a3; /* Darker background for options */
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 0.25rem;
+        }
+        .select-dropdown-option {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        .select-dropdown-option:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .select-dropdown-option input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        .select-dropdown-option.selected {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-800 to-purple-800 text-white min-h-screen flex items-center justify-center p-4">
@@ -145,6 +190,19 @@
         </div>
     </div>
 
+    <!-- Announcement View Modal -->
+    <div id="announcementViewModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-xl w-full">
+            <h5 class="text-xl font-bold mb-4" id="announcementModalSubject"></h5>
+            <div class="text-sm text-gray-400 mb-2">From: <span id="announcementModalSender"></span></div>
+            <div class="text-sm text-gray-400 mb-4">Date: <span id="announcementModalDate"></span></div>
+            <p id="announcementModalMessage" class="mb-6 whitespace-pre-wrap"></p>
+            <div class="flex justify-end">
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('announcementViewModal').classList.add('hidden')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
         <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-2xl w-full">
             <h5 class="text-xl font-bold mb-4">Report Details</h5>
@@ -212,6 +270,7 @@
         let currentUserId; // Firebase Auth UID
         let currentUserProfile = {}; // MyWhelp app user profile
         let unsubscribeListeners = []; // To detach listeners on logout
+        let allUsers = []; // To store all user profiles for recipient selection
 
         // --- Firestore Paths ---
         const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
@@ -220,6 +279,8 @@
         const PUBLIC_REPORTS_COLLECTION = `artifacts/${appId}/public/data/reports`;
         const PUBLIC_ATTENDANCE_COLLECTION = `artifacts/${appId}/public/data/attendance`;
         const PUBLIC_EVALUATIONS_COLLECTION = `artifacts/${appId}/public/data/evaluations`;
+        const PUBLIC_DISCUSSIONS_COLLECTION = `artifacts/${appId}/public/data/discussions`; // New
+        const PUBLIC_ANNOUNCEMENTS_COLLECTION = `artifacts/${appId}/public/data/announcements`; // New
 
         // --- Initialization ---
         async function initializeAppAndAuth() {
@@ -270,6 +331,7 @@
             if (userDocSnap.exists()) {
                 currentUserProfile = { uid: uid, ...userDocSnap.data() };
                 console.log("User profile loaded successfully:", currentUserProfile);
+                await fetchAllUsers(); // Fetch all users for announcements/discussions recipient lists
                 showMainContent();
             } else {
                 console.warn("User profile DOES NOT EXIST in Firestore for UID:", uid, ". Redirecting to login.");
@@ -278,6 +340,18 @@
                 showCustomAlert("Your user profile could not be found. Please contact support or try registering again if you believe this is an error.", "Profile Missing");
                 await signOut(auth); // Force sign out if profile is missing to prevent loop
                 showLoginContent(); // Ensure login content is shown after sign out
+            }
+        }
+
+        async function fetchAllUsers() {
+            try {
+                const usersCollectionRef = collection(db, PUBLIC_USERS_COLLECTION);
+                const querySnapshot = await getDocs(usersCollectionRef);
+                allUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("All users fetched for recipient lists:", allUsers);
+            } catch (error) {
+                console.error("Error fetching all users:", error);
+                showCustomAlert("Failed to load user list for announcements/discussions: " + error.message);
             }
         }
         
@@ -295,6 +369,7 @@
             unsubscribeListeners = [];
             currentUserProfile = {};
             currentUserId = null;
+            allUsers = []; // Clear all users on logout
         }
 
         // --- UI State Management ---
@@ -366,11 +441,7 @@
                 const user = userCredential.user;
                 console.log("Firebase user created:", user.uid);
 
-                // Send email verification
-                await sendEmailVerification(user);
-                console.log("Email verification sent for user:", user.email);
-
-                // Save user profile to Firestore
+                // Save user profile to Firestore immediately after Firebase user creation
                 console.log("Attempting to save user profile to Firestore for UID:", user.uid);
                 const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.uid);
                 await setDoc(userDocRef, {
@@ -381,6 +452,10 @@
                     uid: user.uid // Store Firebase UID as MyWhelp ID
                 });
                 console.log("User profile saved to Firestore for UID:", user.uid);
+
+                // Send email verification AFTER profile is saved
+                await sendEmailVerification(user);
+                console.log("Email verification sent for user:", user.email);
 
                 showEmailVerificationModal("Registration Successful!", "Your account has been created. A verification email has been sent to " + email + ". Please verify your email to log in.");
                 goBackToSelection(); // Go back to selection after registration
@@ -508,6 +583,12 @@
                 reporting: { title: 'Write Report', icon: 'fa-file-alt', content: getReportingContent, condition: !['Early Youth', 'RC'].includes(role) },
                 myReports: { title: 'My Reports', icon: 'fa-folder-open', content: getMyReportsContent, condition: !['Early Youth', 'RC'].includes(role) },
                 viewReports: { title: 'View Reports', icon: 'fa-eye', content: getAllReportsContent, condition: role !== 'Early Youth' },
+                
+                // New Tabs
+                manageDiscussions: { title: 'Manage Discussions', icon: 'fa-comments', content: getManageDiscussionsContent, condition: role === 'Early Youth Instructor' },
+                viewDiscussions: { title: 'View Discussions', icon: 'fa-book-open', content: getViewDiscussionsContent, condition: role !== 'Early Youth' },
+                sendAnnouncements: { title: 'Send Announcement', icon: 'fa-bullhorn', content: getSendAnnouncementsContent, condition: ['Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(role) },
+                myAnnouncements: { title: 'My Messages', icon: 'fa-envelope-open-text', content: getMyAnnouncementsContent, condition: true },
             };
 
             const visibleTabs = Object.entries(allTabs).filter(([key, tab]) => tab.condition).map(([key, tab]) => ({ id: key, ...tab }));
@@ -552,6 +633,20 @@
             if (visibleTabIds.includes('viewReports')) {
                 loadVisibleReports();
             }
+            // New Listeners
+            if (visibleTabIds.includes('manageDiscussions')) {
+                loadMyDiscussions();
+            }
+            if (visibleTabIds.includes('viewDiscussions')) {
+                loadAllPublishedDiscussions();
+            }
+            if (visibleTabIds.includes('sendAnnouncements')) {
+                // No specific listener needed on load, but will populate user list
+            }
+            if (visibleTabIds.includes('myAnnouncements')) {
+                loadMySentAnnouncements();
+                loadMyReceivedAnnouncements();
+            }
         }
         
         window.switchTab = (event, tabId) => {
@@ -560,6 +655,18 @@
             document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
             document.getElementById(`${tabId}-content`).classList.remove('hidden');
             event.currentTarget.classList.add('active');
+
+            // Specific refresh logic for new tabs
+            if (tabId === 'manageDiscussions') {
+                loadMyDiscussions();
+            } else if (tabId === 'viewDiscussions') {
+                loadAllPublishedDiscussions();
+            } else if (tabId === 'sendAnnouncements') {
+                populateRecipientDropdown();
+            } else if (tabId === 'myAnnouncements') {
+                loadMySentAnnouncements();
+                loadMyReceivedAnnouncements();
+            }
         };
 
         // --- UI Content Generators ---
@@ -655,6 +762,177 @@
                 <p id="noVisibleReports" class="text-gray-400 text-center mt-4 hidden">No reports found.</p>
             `;
         }
+
+        // --- New UI Content Generators ---
+
+        function getManageDiscussionsContent() {
+            const today = new Date().toISOString().split('T')[0];
+            return `
+                <h4 class="text-xl font-bold mb-4">Create New Discussion & Takeaways</h4>
+                <input type="date" id="discussionDate" value="${today}" class="form-input p-3 rounded-lg mb-3 w-full md:w-auto">
+                <input type="text" id="discussionTopic" placeholder="Discussion Topic" class="form-input w-full mb-3 p-3 rounded-lg">
+                <textarea id="discussionTakeaways" class="form-input w-full p-3 rounded-lg h-32 mb-3" placeholder="Enter takeaways (one per line for bullet points)..."></textarea>
+                <input type="text" id="discussionNextTopic" placeholder="Topic for Next Week (Optional)" class="form-input w-full mb-3 p-3 rounded-lg">
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Publish To:</label>
+                    <div class="select-dropdown">
+                        <button type="button" class="select-dropdown-button" onclick="toggleDropdown('discussionAudienceDropdown')">
+                            <span id="discussionAudienceSelectedText">Select Audience</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="discussionAudienceDropdown" class="select-dropdown-options hidden">
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="all" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> All Users
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> Early Youth
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth Instructor" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> Early Youth Instructors
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth Advisor" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> Early Youth Advisors
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="TC" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> Territorial Coordinators (TC)
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="RC" data-type="role" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> Regional Coordinators (RC)
+                            </label>
+                            <hr class="border-white/20 my-2">
+                            <div id="discussionIndividualUsers"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 mt-4">
+                    <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveDiscussion(false)"><i class="fas fa-save mr-2"></i>Save as Draft</button>
+                    <button class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveDiscussion(true)"><i class="fas fa-paper-plane mr-2"></i>Publish Discussion</button>
+                </div>
+
+                <hr class="border-white/20 my-6">
+                <h4 class="text-xl font-bold mb-4">My Discussions</h4>
+                ${getSpinner('myDiscussionsSpinner')}
+                <ul id="myDiscussionsList" class="space-y-3"></ul>
+                <p id="noMyDiscussions" class="text-gray-400 text-center mt-4 hidden">You have not created any discussions.</p>
+            `;
+        }
+
+        function getViewDiscussionsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Previous Discussions & Takeaways</h4>
+                ${getSpinner('viewDiscussionsSpinner')}
+                <div id="publishedDiscussionsList" class="space-y-4"></div>
+                <p id="noPublishedDiscussions" class="text-gray-400 text-center mt-4 hidden">No discussions available for your role.</p>
+            `;
+        }
+
+        function getSendAnnouncementsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">Send New Announcement</h4>
+                <input type="text" id="announcementSubject" placeholder="Subject" class="form-input w-full mb-3 p-3 rounded-lg">
+                <textarea id="announcementMessage" class="form-input w-full p-3 rounded-lg h-32 mb-3" placeholder="Write your announcement message here..."></textarea>
+
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Send To:</label>
+                    <div class="select-dropdown">
+                        <button type="button" class="select-dropdown-button" onclick="toggleDropdown('announcementRecipientsDropdown')">
+                            <span id="announcementRecipientsSelectedText">Select Recipients</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="announcementRecipientsDropdown" class="select-dropdown-options hidden">
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="all" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> All Users
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> Early Youth
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth Instructor" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> Early Youth Instructors
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="Early Youth Advisor" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> Early Youth Advisors
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="TC" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> Territorial Coordinators (TC)
+                            </label>
+                            <label class="select-dropdown-option">
+                                <input type="checkbox" value="RC" data-type="role" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> Regional Coordinators (RC)
+                            </label>
+                            <hr class="border-white/20 my-2">
+                            <div id="announcementIndividualUsers"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-4">
+                    <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg" onclick="sendAnnouncement()"><i class="fas fa-paper-plane mr-2"></i>Send Announcement</button>
+                </div>
+
+                <hr class="border-white/20 my-6">
+                <h4 class="text-xl font-bold mb-4">My Sent Announcements</h4>
+                ${getSpinner('sentAnnouncementsSpinner')}
+                <ul id="sentAnnouncementsList" class="space-y-3"></ul>
+                <p id="noSentAnnouncements" class="text-gray-400 text-center mt-4 hidden">You have not sent any announcements.</p>
+            `;
+        }
+
+        function getMyAnnouncementsContent() {
+            return `
+                <h4 class="text-xl font-bold mb-4">My Received Messages</h4>
+                ${getSpinner('receivedAnnouncementsSpinner')}
+                <ul id="receivedAnnouncementsList" class="space-y-3"></ul>
+                <p id="noReceivedAnnouncements" class="text-gray-400 text-center mt-4 hidden">No messages received.</p>
+            `;
+        }
+
+        // --- Helper functions for dropdowns ---
+        window.toggleDropdown = (dropdownId) => {
+            document.getElementById(dropdownId).classList.toggle('hidden');
+        };
+
+        window.updateSelectedText = (dropdownId, textId) => {
+            const dropdown = document.getElementById(dropdownId);
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedValues = Array.from(checkboxes).map(cb => {
+                if (cb.dataset.type === 'role') return cb.value;
+                return allUsers.find(u => u.id === cb.value)?.name || cb.value; // Get name for individual users
+            });
+            const selectedTextElement = document.getElementById(textId);
+            if (selectedValues.length === 0) {
+                selectedTextElement.textContent = 'Select Audience';
+            } else if (selectedValues.length === 1) {
+                selectedTextElement.textContent = selectedValues[0];
+            } else {
+                selectedTextElement.textContent = `${selectedValues.length} selected`;
+            }
+        };
+
+        function populateRecipientDropdown() {
+            const discussionIndividualUsersDiv = document.getElementById('discussionIndividualUsers');
+            const announcementIndividualUsersDiv = document.getElementById('announcementIndividualUsers');
+            
+            if (discussionIndividualUsersDiv) discussionIndividualUsersDiv.innerHTML = '';
+            if (announcementIndividualUsersDiv) announcementIndividualUsersDiv.innerHTML = '';
+
+            allUsers.forEach(user => {
+                const discussionLabel = document.createElement('label');
+                discussionLabel.className = 'select-dropdown-option';
+                discussionLabel.innerHTML = `
+                    <input type="checkbox" value="${user.id}" data-type="user" onchange="updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText')"> ${user.name} (${user.role})
+                `;
+                if (discussionIndividualUsersDiv) discussionIndividualUsersDiv.appendChild(discussionLabel);
+
+                const announcementLabel = document.createElement('label');
+                announcementLabel.className = 'select-dropdown-option';
+                announcementLabel.innerHTML = `
+                    <input type="checkbox" value="${user.id}" data-type="user" onchange="updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText')"> ${user.name} (${user.role})
+                `;
+                if (announcementIndividualUsersDiv) announcementIndividualUsersDiv.appendChild(announcementLabel);
+            });
+        }
+
 
         // --- Data Handling Functions (Firestore) ---
 
@@ -1392,6 +1670,408 @@
                 showCustomAlert("Failed to save changes: " + error.message);
             }
         };
+
+        // --- New Data Functions for Discussions ---
+
+        window.saveDiscussion = async (publish) => {
+            const discussionDate = document.getElementById('discussionDate').value;
+            const discussionTopic = document.getElementById('discussionTopic').value.trim();
+            const discussionTakeaways = document.getElementById('discussionTakeaways').value.trim().split('\n').filter(line => line.trim() !== '');
+            const discussionNextTopic = document.getElementById('discussionNextTopic').value.trim();
+
+            if (!discussionDate || !discussionTopic || discussionTakeaways.length === 0) {
+                showCustomAlert("Please fill in discussion date, topic, and at least one takeaway.");
+                return;
+            }
+
+            const audienceCheckboxes = document.querySelectorAll('#discussionAudienceDropdown input[type="checkbox"]:checked');
+            const audience = Array.from(audienceCheckboxes).map(cb => cb.value);
+
+            if (audience.length === 0 && publish) {
+                showCustomAlert("Please select at least one audience for the discussion if publishing.");
+                return;
+            }
+
+            try {
+                const discussionsCollectionRef = collection(db, PUBLIC_DISCUSSIONS_COLLECTION);
+                await addDoc(discussionsCollectionRef, {
+                    date: discussionDate,
+                    topic: discussionTopic,
+                    takeaways: discussionTakeaways,
+                    nextTopic: discussionNextTopic,
+                    authorUid: currentUserId,
+                    authorName: currentUserProfile.name,
+                    audience: audience,
+                    published: publish,
+                    createdAt: serverTimestamp()
+                });
+
+                document.getElementById('discussionDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('discussionTopic').value = '';
+                document.getElementById('discussionTakeaways').value = '';
+                document.getElementById('discussionNextTopic').value = '';
+                document.querySelectorAll('#discussionAudienceDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+                updateSelectedText('discussionAudienceDropdown', 'discussionAudienceSelectedText');
+
+                showCustomAlert(`Discussion ${publish ? 'published' : 'saved as draft'} successfully!`);
+                loadMyDiscussions(); // Refresh the list of my discussions
+            } catch (error) {
+                console.error("Error saving discussion:", error);
+                showCustomAlert("Failed to save discussion: " + error.message);
+            }
+        };
+
+        function loadMyDiscussions() {
+            const myDiscussionsList = document.getElementById('myDiscussionsList');
+            const noMyDiscussionsMessage = document.getElementById('noMyDiscussions');
+            const spinner = document.getElementById('myDiscussionsSpinner');
+            spinner.classList.remove('hidden');
+            noMyDiscussionsMessage.classList.add('hidden');
+            myDiscussionsList.innerHTML = '';
+
+            const discussionsCollectionRef = collection(db, PUBLIC_DISCUSSIONS_COLLECTION);
+            const q = query(discussionsCollectionRef, where("authorUid", "==", currentUserId));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                myDiscussionsList.innerHTML = '';
+                if (snapshot.empty) {
+                    noMyDiscussionsMessage.classList.remove('hidden');
+                } else {
+                    noMyDiscussionsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const discussion = doc.data();
+                        const date = discussion.createdAt ? new Date(discussion.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const status = discussion.published ? 'Published' : 'Draft';
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="font-semibold">${discussion.topic} <span class="text-xs text-gray-400">(${status})</span></p>
+                                <p class="text-sm text-gray-300">Date: ${discussion.date} | Audience: ${discussion.audience.join(', ')}</p>
+                            </div>
+                            <div class="flex items-center ml-4">
+                                <button class="text-blue-400 hover:text-blue-600 mr-2" onclick="editDiscussion('${doc.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-400 hover:text-red-600" onclick="deleteDiscussion('${doc.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        myDiscussionsList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading my discussions:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load your discussions: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.editDiscussion = async (discussionId) => {
+            // This function would typically populate the form for editing.
+            // For now, it's a placeholder. Implement full edit functionality if needed.
+            showCustomAlert("Edit functionality for discussions is not yet fully implemented. Please delete and recreate if changes are needed.", "Under Construction");
+        };
+
+        window.deleteDiscussion = async (discussionId) => {
+            try {
+                const discussionDocRef = doc(db, PUBLIC_DISCUSSIONS_COLLECTION, discussionId);
+                await deleteDoc(discussionDocRef);
+                showCustomAlert("Discussion deleted.");
+            } catch (error) {
+                console.error("Error deleting discussion:", error);
+                showCustomAlert("Failed to delete discussion: " + error.message);
+            }
+        };
+
+        function loadAllPublishedDiscussions() {
+            const publishedDiscussionsList = document.getElementById('publishedDiscussionsList');
+            const noPublishedDiscussionsMessage = document.getElementById('noPublishedDiscussions');
+            const spinner = document.getElementById('viewDiscussionsSpinner');
+            spinner.classList.remove('hidden');
+            noPublishedDiscussionsMessage.classList.add('hidden');
+            publishedDiscussionsList.innerHTML = '';
+
+            const discussionsCollectionRef = collection(db, PUBLIC_DISCUSSIONS_COLLECTION);
+            const q = query(discussionsCollectionRef, where("published", "==", true));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                publishedDiscussionsList.innerHTML = '';
+                const relevantDiscussions = [];
+                snapshot.forEach(doc => {
+                    const discussion = doc.data();
+                    // Check if 'all' is in audience or if current user's role/UID is in audience
+                    const isForCurrentUser = discussion.audience.includes('all') ||
+                                             discussion.audience.includes(currentUserProfile.role) ||
+                                             discussion.audience.includes(currentUserProfile.uid);
+                    if (isForCurrentUser) {
+                        relevantDiscussions.push(discussion);
+                    }
+                });
+
+                if (relevantDiscussions.length === 0) {
+                    noPublishedDiscussionsMessage.classList.remove('hidden');
+                } else {
+                    noPublishedDiscussionsMessage.classList.add('hidden');
+                    // Sort by date, newest first
+                    relevantDiscussions.sort((a, b) => b.date.localeCompare(a.date));
+
+                    relevantDiscussions.forEach((discussion, index) => {
+                        const header = document.createElement('div');
+                        header.className = 'accordion-header bg-white/10 p-4 rounded-lg flex justify-between items-center cursor-pointer mb-1';
+                        header.innerHTML = `
+                            <h5 class="font-semibold">${discussion.date} - ${discussion.topic}</h5>
+                            <i class="fas fa-chevron-down"></i>
+                        `;
+                        header.onclick = (e) => {
+                            const content = header.nextElementSibling;
+                            content.classList.toggle('hidden');
+                            header.querySelector('i').classList.toggle('fa-chevron-down');
+                            header.querySelector('i').classList.toggle('fa-chevron-up');
+                        };
+
+                        const content = document.createElement('div');
+                        content.className = 'accordion-content bg-white/5 p-4 rounded-lg hidden';
+                        
+                        let takeawaysHtml = discussion.takeaways.map(t => `<li>${t}</li>`).join('');
+                        let nextTopicHtml = discussion.nextTopic ? `<p class="mt-3 font-medium">Topic for Next Week: ${discussion.nextTopic}</p>` : '';
+
+                        content.innerHTML = `
+                            <p class="text-sm text-gray-300 mb-2">By: ${discussion.authorName}</p>
+                            <h6 class="font-semibold mb-2">Takeaways:</h6>
+                            <ul class="list-disc list-inside space-y-1">${takeawaysHtml}</ul>
+                            ${nextTopicHtml}
+                        `;
+                        publishedDiscussionsList.appendChild(header);
+                        publishedDiscussionsList.appendChild(content);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading published discussions:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load discussions: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+
+        // --- New Data Functions for Announcements ---
+
+        window.sendAnnouncement = async () => {
+            const subject = document.getElementById('announcementSubject').value.trim();
+            const message = document.getElementById('announcementMessage').value.trim();
+
+            if (!subject || !message) {
+                showCustomAlert("Please enter both subject and message for the announcement.");
+                return;
+            }
+
+            const recipientCheckboxes = document.querySelectorAll('#announcementRecipientsDropdown input[type="checkbox"]:checked');
+            const recipients = Array.from(recipientCheckboxes).map(cb => cb.value);
+
+            if (recipients.length === 0) {
+                showCustomAlert("Please select at least one recipient for the announcement.");
+                return;
+            }
+
+            try {
+                const announcementsCollectionRef = collection(db, PUBLIC_ANNOUNCEMENTS_COLLECTION);
+                await addDoc(announcementsCollectionRef, {
+                    senderUid: currentUserId,
+                    senderName: currentUserProfile.name,
+                    subject: subject,
+                    message: message,
+                    recipients: recipients, // Array of UIDs or roles
+                    createdAt: serverTimestamp(),
+                    readBy: [] // Array to track UIDs who have read it
+                });
+
+                document.getElementById('announcementSubject').value = '';
+                document.getElementById('announcementMessage').value = '';
+                document.querySelectorAll('#announcementRecipientsDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+                updateSelectedText('announcementRecipientsDropdown', 'announcementRecipientsSelectedText');
+
+                showCustomAlert("Announcement sent successfully!");
+                loadMySentAnnouncements(); // Refresh sent messages list
+
+                // --- IMPORTANT NOTE ON EMAIL SENDING ---
+                // Direct email sending from client-side JavaScript is not possible due to security.
+                // To send actual emails, you would typically use a backend service (e.g., Firebase Cloud Functions)
+                // that integrates with an email API (like SendGrid, Nodemailer).
+                // The email would then notify users to check their MyWhelp portal for the new message.
+                // Example of what a backend function might do:
+                /*
+                const recipientEmails = [];
+                if (recipients.includes('all')) {
+                    allUsers.forEach(user => recipientEmails.push(user.email));
+                } else {
+                    recipients.forEach(recipient => {
+                        if (['Early Youth', 'Early Youth Instructor', 'Early Youth Advisor', 'TC', 'RC'].includes(recipient)) {
+                            allUsers.filter(user => user.role === recipient).forEach(user => recipientEmails.push(user.email));
+                        } else {
+                            const user = allUsers.find(u => u.id === recipient);
+                            if (user) recipientEmails.push(user.email);
+                        }
+                    });
+                }
+                // Call a Cloud Function here to send emails:
+                // await fetch('/sendEmailNotification', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ emails: recipientEmails, subject: `New MyWhelp Message: ${subject}` })
+                // });
+                */
+
+            } catch (error) {
+                console.error("Error sending announcement:", error);
+                showCustomAlert("Failed to send announcement: " + error.message);
+            }
+        };
+
+        function loadMySentAnnouncements() {
+            const sentAnnouncementsList = document.getElementById('sentAnnouncementsList');
+            const noSentAnnouncementsMessage = document.getElementById('noSentAnnouncements');
+            const spinner = document.getElementById('sentAnnouncementsSpinner');
+            spinner.classList.remove('hidden');
+            noSentAnnouncementsMessage.classList.add('hidden');
+            sentAnnouncementsList.innerHTML = '';
+
+            const announcementsCollectionRef = collection(db, PUBLIC_ANNOUNCEMENTS_COLLECTION);
+            const q = query(announcementsCollectionRef, where("senderUid", "==", currentUserId));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                sentAnnouncementsList.innerHTML = '';
+                if (snapshot.empty) {
+                    noSentAnnouncementsMessage.classList.remove('hidden');
+                } else {
+                    noSentAnnouncementsMessage.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const announcement = doc.data();
+                        const date = announcement.createdAt ? new Date(announcement.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const recipientsText = announcement.recipients.length > 3 ? `${announcement.recipients.length} recipients` : announcement.recipients.map(r => {
+                            const user = allUsers.find(u => u.id === r);
+                            return user ? user.name : r; // Show name if user, else role/UID
+                        }).join(', ');
+
+                        const li = document.createElement('li');
+                        li.className = 'bg-white/10 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="font-semibold">${announcement.subject}</p>
+                                <p class="text-sm text-gray-300">To: ${recipientsText} | Sent: ${date}</p>
+                            </div>
+                            <div class="ml-4">
+                                <button class="text-blue-400 hover:text-blue-600" onclick="viewAnnouncement('${doc.id}', '${announcement.subject}', '${announcement.senderName}', '${date}', '${announcement.message}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        `;
+                        sentAnnouncementsList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading sent announcements:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load sent announcements: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        function loadMyReceivedAnnouncements() {
+            const receivedAnnouncementsList = document.getElementById('receivedAnnouncementsList');
+            const noReceivedAnnouncementsMessage = document.getElementById('noReceivedAnnouncements');
+            const spinner = document.getElementById('receivedAnnouncementsSpinner');
+            spinner.classList.remove('hidden');
+            noReceivedAnnouncementsMessage.classList.add('hidden');
+            receivedAnnouncementsList.innerHTML = '';
+
+            const announcementsCollectionRef = collection(db, PUBLIC_ANNOUNCEMENTS_COLLECTION);
+            // Query for announcements where 'all' is a recipient OR current user's role is a recipient OR current user's UID is a recipient
+            // Firestore doesn't support OR queries across different fields directly in a single query without indexes.
+            // For simplicity and to avoid complex indexing, we'll fetch all and filter client-side,
+            // or perform multiple queries and merge results. For now, fetch all and filter.
+            // NOTE: For very large datasets, this approach might be inefficient.
+            const q = query(announcementsCollectionRef);
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                receivedAnnouncementsList.innerHTML = '';
+                const relevantAnnouncements = [];
+                snapshot.forEach(doc => {
+                    const announcement = doc.data();
+                    const isForCurrentUser = announcement.recipients.includes('all') ||
+                                             announcement.recipients.includes(currentUserProfile.role) ||
+                                             announcement.recipients.includes(currentUserProfile.uid);
+                    if (isForCurrentUser) {
+                        relevantAnnouncements.push({ id: doc.id, ...announcement });
+                    }
+                });
+
+                if (relevantAnnouncements.length === 0) {
+                    noReceivedAnnouncementsMessage.classList.remove('hidden');
+                } else {
+                    noReceivedAnnouncementsMessage.classList.add('hidden');
+                    // Sort by date, newest first
+                    relevantAnnouncements.sort((a, b) => {
+                        const dateA = a.createdAt ? a.createdAt.toDate() : new Date(0);
+                        const dateB = b.createdAt ? b.createdAt.toDate() : new Date(0);
+                        return dateB - dateA;
+                    });
+
+                    relevantAnnouncements.forEach(announcement => {
+                        const date = announcement.createdAt ? new Date(announcement.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        const isRead = announcement.readBy && announcement.readBy.includes(currentUserId);
+                        const li = document.createElement('li');
+                        li.className = `bg-white/10 p-3 rounded-lg flex justify-between items-center ${isRead ? 'opacity-70' : 'border-2 border-indigo-400'}`;
+                        li.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="font-semibold">${announcement.subject} ${!isRead ? '<span class="text-yellow-300 text-xs ml-2">(Unread)</span>' : ''}</p>
+                                <p class="text-sm text-gray-300">From: ${announcement.senderName} | Received: ${date}</p>
+                            </div>
+                            <div class="ml-4">
+                                <button class="text-blue-400 hover:text-blue-600" onclick="viewAnnouncementAndMarkRead('${announcement.id}', '${announcement.subject}', '${announcement.senderName}', '${date}', '${announcement.message}', ${isRead})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        `;
+                        receivedAnnouncementsList.appendChild(li);
+                    });
+                }
+                spinner.classList.add('hidden');
+            }, (error) => {
+                console.error("Error loading received announcements:", error);
+                spinner.classList.add('hidden');
+                showCustomAlert("Failed to load received messages: " + error.message);
+            });
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        window.viewAnnouncement = (id, subject, sender, date, message) => {
+            document.getElementById('announcementModalSubject').textContent = subject;
+            document.getElementById('announcementModalSender').textContent = sender;
+            document.getElementById('announcementModalDate').textContent = date;
+            document.getElementById('announcementModalMessage').textContent = message;
+            document.getElementById('announcementViewModal').classList.remove('hidden');
+        };
+
+        window.viewAnnouncementAndMarkRead = async (id, subject, sender, date, message, isRead) => {
+            viewAnnouncement(id, subject, sender, date, message);
+            if (!isRead) {
+                try {
+                    const announcementDocRef = doc(db, PUBLIC_ANNOUNCEMENTS_COLLECTION, id);
+                    await updateDoc(announcementDocRef, {
+                        readBy: [...(await getDoc(announcementDocRef)).data().readBy || [], currentUserId]
+                    });
+                } catch (error) {
+                    console.error("Error marking announcement as read:", error);
+                }
+            }
+        };
+
 
         // --- Initial Call ---
         initializeAppAndAuth();
