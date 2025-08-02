@@ -71,6 +71,7 @@
                 </div>
                 <button id="login-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 mb-2" onclick="loginUser()">Login</button>
                 <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotPasswordModal()">Forgot Password?</button>
+                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mb-2" onclick="showForgotMyWhelpIdModal()">Forgot My ID?</button>
                 <button class="w-full bg-transparent hover:bg-white/10 border border-white/20 text-white font-bold py-2 px-4 rounded-lg transition duration-300" onclick="goBackToSelection()">Back</button>
             </div>
 
@@ -119,31 +120,62 @@
         </div>
     </div>
     
-    <div id="forgotIdModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
+    <!-- Forgot Password Modal (Email Reset) -->
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
         <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
-            <h5 class="text-xl font-bold mb-4">Forgot My ID</h5>
-            <div id="forgotIdStep1">
-                <p class="text-gray-300 mb-4">Enter your first and last name to begin recovery.</p>
-                <input type="text" id="forgotFirstName" placeholder="First Name" class="form-input w-full mb-3 p-3 rounded-lg">
-                <input type="text" id="forgotLastName" placeholder="Last Name" class="form-input w-full mb-3 p-3 rounded-lg">
-            </div>
-            <div id="forgotIdStep2" class="hidden mt-4">
-                <p class="text-gray-300 mb-2">Security Challenge:</p>
-                <p id="challengeText" class="mb-4 font-semibold"></p>
-                <select id="challengeInput" class="form-input w-full p-3 rounded-lg">
-                    <option value="" disabled selected>Select the role</option>
-                    <option value="Early Youth Instructor">Early Youth Instructor</option>
-                    <option value="TC">Territorial Coordinator (TC)</option>
-                    <option value="RC">Regional Coordinator (RC)</option>
-                </select>
-            </div>
+            <h5 class="text-xl font-bold mb-4">Reset Your Password</h5>
+            <p class="text-gray-300 mb-4">Enter your email address to receive a password reset link.</p>
+            <input type="email" id="resetPasswordEmail" placeholder="Enter your email" class="form-input w-full mb-3 p-3 rounded-lg">
             <div class="flex justify-end gap-4 mt-6">
-                <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="closeForgotIdModal()">Cancel</button>
-                <button id="forgotIdNextButton" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="handleForgotIdNext()">Next</button>
-                <button id="forgotIdSubmitButton" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg hidden" onclick="handleForgotIdSubmit()">Submit</button>
+                <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('forgotPasswordModal').classList.add('hidden')">Cancel</button>
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="sendPasswordResetEmailHandler()">Send Reset Email</button>
             </div>
         </div>
     </div>
+
+    <!-- Forgot MyWhelp ID Modal (Security Question) -->
+    <div id="forgotMyWhelpIdModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h5 class="text-xl font-bold mb-4">Forgot MyWhelp ID</h5>
+            <div id="forgotMyWhelpIdStep1">
+                <p class="text-gray-300 mb-4">Enter your email to retrieve your MyWhelp ID using your security question.</p>
+                <input type="email" id="forgotMyWhelpIdEmail" placeholder="Enter your email" class="form-input w-full mb-3 p-3 rounded-lg">
+                <div class="flex justify-end gap-4 mt-6">
+                    <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="document.getElementById('forgotMyWhelpIdModal').classList.add('hidden')">Cancel</button>
+                    <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="findMyWhelpIdByEmail()">Next</button>
+                </div>
+            </div>
+            <div id="forgotMyWhelpIdStep2" class="hidden">
+                <p class="text-gray-300 mb-2">Answer your security question:</p>
+                <p id="forgotMyWhelpIdQuestion" class="mb-4 font-semibold"></p>
+                <input type="text" id="forgotMyWhelpIdAnswer" placeholder="Your answer" class="form-input w-full mb-3 p-3 rounded-lg">
+                <div class="flex justify-end gap-4 mt-6">
+                    <button class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg" onclick="resetForgotMyWhelpIdModal()">Back</button>
+                    <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg" onclick="revealMyWhelpId()">Reveal My ID</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Question Modal (for Registration) -->
+    <div id="securityQuestionModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-md w-full">
+            <h5 class="text-xl font-bold mb-4">Set Your Security Question</h5>
+            <p class="text-gray-300 mb-4">Please select a security question and provide an answer. This can help you recover your MyWhelp ID if needed.</p>
+            <select id="regSecurityQuestion" class="form-input w-full p-3 rounded-lg mb-3">
+                <option value="" disabled selected>Select a security question</option>
+                <option value="What was your first pet's name?">What was your first pet's name?</option>
+                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                <option value="What city were you born in?">What city were you born in?</option>
+                <option value="What is the name of your favorite book?">What is the name of your favorite book?</option>
+            </select>
+            <input type="text" id="regSecurityAnswer" placeholder="Your answer" class="form-input w-full mb-3 p-3 rounded-lg">
+            <div class="flex justify-end gap-4 mt-6">
+                <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg" onclick="saveSecurityQuestionAndCompleteRegistration()">Save & Continue</button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4">
         <div class="glass-effect rounded-2xl p-6 shadow-2xl max-w-2xl w-full">
@@ -192,7 +224,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, getDocs, collection, query, where, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Environment & Config ---
@@ -213,7 +245,7 @@
         let currentUserId; // Firebase Auth UID
         let currentUserProfile = {}; // MyWhelp app user profile
         let unsubscribeListeners = []; // To detach listeners on logout
-        let forgotIdChallengeData = {}; // To hold data for the forgot ID challenge
+        let registrationTempUserData = null; // To hold user data during security question setup
 
         // --- Firestore Paths ---
         const PUBLIC_USERS_COLLECTION = `artifacts/${appId}/public/data/mywhelp_users`;
@@ -509,21 +541,21 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const userUid = userCredential.user.uid;
 
-                const mywhelpId = generateMyWhelpId(firstName, lastName, role);
-                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userUid);
-
-                await setDoc(userDocRef, {
-                    mywhelpId,
+                // Store temporary user data to be used after security question setup
+                registrationTempUserData = {
+                    uid: userUid,
+                    mywhelpId: generateMyWhelpId(firstName, lastName, role),
                     name: `${firstName} ${lastName}`,
                     firstName,
                     lastName,
                     email,
                     role,
                     createdAt: serverTimestamp()
-                });
+                };
 
-                await loadUserProfile(userUid);
-                showCustomAlert(`Registration successful! Your ID is: ${mywhelpId}`);
+                // Show security question modal
+                document.getElementById('securityQuestionModal').classList.remove('hidden');
+
             } catch (error) {
                 console.error("Registration error:", error);
                 // Check for specific error codes to provide more user-friendly messages
@@ -534,6 +566,38 @@
                 } else {
                     showCustomAlert("Failed to register: " + error.message, "Registration Failed");
                 }
+            }
+        };
+
+        window.saveSecurityQuestionAndCompleteRegistration = async () => {
+            const question = document.getElementById('regSecurityQuestion').value;
+            const answer = document.getElementById('regSecurityAnswer').value.trim();
+
+            if (!question || !answer) {
+                return showCustomAlert("Please select a security question and provide an answer.", "Security Question Required");
+            }
+
+            if (!registrationTempUserData) {
+                console.error("No temporary user data found for registration completion.");
+                return showCustomAlert("An error occurred. Please try registering again.", "Error");
+            }
+
+            try {
+                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, registrationTempUserData.uid);
+                await setDoc(userDocRef, {
+                    ...registrationTempUserData,
+                    securityQuestion: question,
+                    securityAnswer: answer // In a real app, hash this answer!
+                });
+
+                document.getElementById('securityQuestionModal').classList.add('hidden');
+                registrationTempUserData = null; // Clear temp data
+                await loadUserProfile(userDocRef.id);
+                showCustomAlert(`Registration successful! Your ID is: ${currentUserProfile.mywhelpId}`, "Registration Complete");
+
+            } catch (error) {
+                console.error("Error saving security question and completing registration:", error);
+                showCustomAlert("Failed to complete registration: " + error.message, "Error");
             }
         };
         
@@ -567,78 +631,94 @@
             return `${prefix}${randomNums}${initials}`;
         }
         
-        // --- Feature Implementation: Forgot ID ---
-        // NOTE: The "Forgot ID" functionality is now "Forgot Password" but the underlying logic for MyWhelp ID recovery is retained.
-        // For a full "Forgot Password" flow, Firebase's sendPasswordResetEmail would be used.
-        window.closeForgotIdModal = () => {
-            document.getElementById('forgotIdModal').classList.add('hidden');
-            document.getElementById('forgotIdStep1').classList.remove('hidden');
-            document.getElementById('forgotIdStep2').classList.add('hidden');
-            document.getElementById('forgotIdNextButton').classList.remove('hidden');
-            document.getElementById('forgotIdSubmitButton').classList.add('hidden');
-            document.getElementById('forgotFirstName').value = '';
-            document.getElementById('forgotLastName').value = '';
-            document.getElementById('challengeInput').value = '';
-            forgotIdChallengeData = {};
-        }
-
+        // --- Feature Implementation: Forgot Password (Email Reset) ---
         window.showForgotPasswordModal = () => {
-            closeForgotIdModal(); // Reset state
-            document.getElementById('forgotIdModal').classList.remove('hidden');
-        }
-
-        window.handleForgotIdNext = async () => {
-            const firstName = document.getElementById('forgotFirstName').value.trim();
-            const lastName = document.getElementById('forgotLastName').value.trim();
-            if (!firstName || !lastName) {
-                return showCustomAlert("Please enter both first and last name.");
-            }
-
-            // Find the user who forgot their ID
-            const userQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("firstName", "==", firstName), where("lastName", "==", lastName));
-            const userSnapshot = await getDocs(userQuery);
-
-            if (userSnapshot.empty) {
-                return showCustomAlert("No user found with that name. Please contact jdwhelp@gmail.com for assistance.");
-            }
-            const userToRecover = userSnapshot.docs[0].data();
-
-            // Find a random user for the challenge (EI, TC, or RC)
-            const challengeRoles = ['Early Youth Instructor', 'TC', 'RC'];
-            const randomRole = challengeRoles[Math.floor(Math.random() * challengeRoles.length)];
-            const challengeQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("role", "==", randomRole));
-            const challengeSnapshot = await getDocs(challengeQuery);
-
-            if (challengeSnapshot.empty) {
-                 return showCustomAlert("Could not create a security challenge. Please contact jdwhelp@gmail.com for assistance.");
-            }
-
-            const challengeUser = challengeSnapshot.docs[Math.floor(Math.random() * challengeSnapshot.docs.length)].data();
-
-            forgotIdChallengeData = {
-                userToRecoverId: userToRecover.mywhelpId,
-                challengeUserRole: challengeUser.role
-            };
-
-            document.getElementById('challengeText').textContent = `What is the role of: ${challengeUser.name}?`;
-            document.getElementById('forgotIdStep1').classList.add('hidden');
-            document.getElementById('forgotIdStep2').classList.remove('hidden');
-            document.getElementById('forgotIdNextButton').classList.add('hidden');
-            document.getElementById('forgotIdSubmitButton').classList.remove('hidden');
+            document.getElementById('resetPasswordEmail').value = ''; // Clear previous email
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
         };
 
-        window.handleForgotIdSubmit = () => {
-            const selectedRole = document.getElementById('challengeInput').value;
-            if (!selectedRole) {
-                return showCustomAlert("Please select a role.");
+        window.sendPasswordResetEmailHandler = async () => {
+            const email = document.getElementById('resetPasswordEmail').value.trim();
+            if (!email) {
+                return showCustomAlert("Please enter your email address.", "Required Field");
             }
 
-            if (selectedRole === forgotIdChallengeData.challengeUserRole) {
-                showCustomAlert(`Success! Your ID is: ${forgotIdChallengeData.userToRecoverId}`, "ID Recovered");
-            } else {
-                showCustomAlert("Incorrect role. For security, please email Brethren John Doe at jdwhelp@gmail.com to retrieve your ID.", "Challenge Failed");
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showCustomAlert("A password reset link has been sent to your email address. Please check your inbox (and spam folder).", "Password Reset Sent");
+                document.getElementById('forgotPasswordModal').classList.add('hidden');
+            } catch (error) {
+                console.error("Error sending password reset email:", error);
+                if (error.code === 'auth/user-not-found') {
+                    showCustomAlert("No user found with that email address. Please check the email or register a new account.", "User Not Found");
+                } else {
+                    showCustomAlert("Failed to send password reset email: " + error.message, "Error");
+                }
             }
-            closeForgotIdModal();
+        };
+
+        // --- Feature Implementation: Forgot MyWhelp ID (Security Question) ---
+        let forgotMyWhelpIdUserData = null; // To store user data during ID recovery
+        
+        window.showForgotMyWhelpIdModal = () => {
+            document.getElementById('forgotMyWhelpIdEmail').value = '';
+            document.getElementById('forgotMyWhelpIdStep1').classList.remove('hidden');
+            document.getElementById('forgotMyWhelpIdStep2').classList.add('hidden');
+            document.getElementById('forgotMyWhelpIdModal').classList.remove('hidden');
+            forgotMyWhelpIdUserData = null; // Reset temp data
+        };
+
+        window.resetForgotMyWhelpIdModal = () => {
+            document.getElementById('forgotMyWhelpIdStep1').classList.remove('hidden');
+            document.getElementById('forgotMyWhelpIdStep2').classList.add('hidden');
+            document.getElementById('forgotMyWhelpIdEmail').value = '';
+            document.getElementById('forgotMyWhelpIdQuestion').textContent = '';
+            document.getElementById('forgotMyWhelpIdAnswer').value = '';
+            forgotMyWhelpIdUserData = null;
+        };
+
+        window.findMyWhelpIdByEmail = async () => {
+            const email = document.getElementById('forgotMyWhelpIdEmail').value.trim();
+            if (!email) {
+                return showCustomAlert("Please enter your email address.", "Required Field");
+            }
+
+            try {
+                const usersQuery = query(collection(db, PUBLIC_USERS_COLLECTION), where("email", "==", email));
+                const querySnapshot = await getDocs(usersQuery);
+
+                if (querySnapshot.empty) {
+                    return showCustomAlert("No user found with that email address.", "User Not Found");
+                }
+
+                forgotMyWhelpIdUserData = querySnapshot.docs[0].data();
+                if (!forgotMyWhelpIdUserData.securityQuestion || !forgotMyWhelpIdUserData.securityAnswer) {
+                    return showCustomAlert("This account does not have a security question set up. Please use the 'Forgot Password?' option or contact support.", "Security Question Missing");
+                }
+
+                document.getElementById('forgotMyWhelpIdQuestion').textContent = forgotMyWhelpIdUserData.securityQuestion;
+                document.getElementById('forgotMyWhelpIdStep1').classList.add('hidden');
+                document.getElementById('forgotMyWhelpIdStep2').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error finding user by email for ID recovery:", error);
+                showCustomAlert("An error occurred: " + error.message, "Error");
+            }
+        };
+
+        window.revealMyWhelpId = () => {
+            const userAnswer = document.getElementById('forgotMyWhelpIdAnswer').value.trim();
+            if (!userAnswer) {
+                return showCustomAlert("Please provide an answer to the security question.", "Required Field");
+            }
+
+            if (forgotMyWhelpIdUserData && userAnswer.toLowerCase() === forgotMyWhelpIdUserData.securityAnswer.toLowerCase()) {
+                showCustomAlert(`Your MyWhelp ID is: <span class="font-bold text-lg">${forgotMyWhelpIdUserData.mywhelpId}</span>`, "MyWhelp ID Recovered");
+                document.getElementById('forgotMyWhelpIdModal').classList.add('hidden');
+                resetForgotMyWhelpIdModal();
+            } else {
+                showCustomAlert("Incorrect answer. Please try again or use the 'Forgot Password?' option.", "Incorrect Answer");
+            }
         };
 
         // --- Feature Implementation: Notes & Todos ---
